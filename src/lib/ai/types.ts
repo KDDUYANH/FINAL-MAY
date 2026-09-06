@@ -3,6 +3,7 @@ import { AnalysisRecommendation, ActiveTool } from "@/types/studio";
 export interface AnalysisResult {
   hasProduct: boolean;
   confidence: number;
+  isDemo?: boolean;
   imageQuality: "Good" | "Excellent" | "Fair";
   backgroundStatus: "Needs refinement" | "Clean" | "Studio";
   productBoundingBox?: { x: number; y: number; width: number; height: number };
@@ -25,6 +26,7 @@ export interface EnhancementParams {
 export interface CompositingResult {
   enhancedImageUrl: string;
   maskImageUrl?: string;
+  isDemo?: boolean;
   integrityConfidence: number;
   qaPassed: boolean;
   qaMessage: string;
