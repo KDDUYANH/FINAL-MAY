@@ -1,0 +1,20 @@
+node_modules
+.next
+.git
+.vscode
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env*
+.agents
+fav
+logo
+*.png.old
+img/Signage_technical_specs.pdf
+img/LOGO 1.pdf
+img/LOGO PINK ROSE.pdf
+img/MAY_Beauty_Brand_Pack/Signage_technical_specs.pdf
+img/MAY_Beauty_Brand_Pack/LOGO GOLDEN.pdf
+img/MAY_Beauty_Brand_Pack/Firefly_MAKE PIXEL PERFECT , SMOOTH CURVER , NO BACKGROUND 300836.png
+img/MAY_Beauty_Brand_Pack/LOGO GOLDEN sao chép.png
