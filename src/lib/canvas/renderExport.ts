@@ -1,4 +1,4 @@
-import { AssetItem, WatermarkSettings, LogoSettings } from "@/types/studio";
+import { AssetItem, WatermarkSettings } from "@/types/studio";
 import { MAY_BRAND_CONFIG } from "@/lib/brand.config";
 
 export interface ExportRenderOptions {
@@ -6,7 +6,6 @@ export interface ExportRenderOptions {
   format: "JPG" | "PNG" | "WebP";
   ratio: "Original" | "1:1" | "4:5" | "9:16" | "16:9";
   resolution: "Original" | "2K" | "4K";
-  includeLogo: boolean;
   includeWatermark: boolean;
 }
 
@@ -15,9 +14,8 @@ function getPresetFilter(preset: string): string {
     case "Clean Luxury":
       return "brightness(1.05) contrast(1.04) saturate(1.02)";
     case "Soft Pink":
+    case "Soft Beauty":
       return "sepia(0.08) hue-rotate(-15deg) brightness(1.03) contrast(1.02)";
-    case "Marble Studio":
-      return "contrast(1.06) brightness(1.02) saturate(0.95)";
     case "Editorial":
       return "contrast(1.10) saturate(1.08) brightness(1.01)";
     case "Natural":
@@ -28,9 +26,9 @@ function getPresetFilter(preset: string): string {
 }
 
 export async function renderExportBlob(options: ExportRenderOptions): Promise<Blob> {
-  const { asset, format, ratio, resolution, includeLogo, includeWatermark } = options;
+  const { asset, format, ratio, resolution, includeWatermark } = options;
 
-  // 1. Load source image (favoring committedUrl / previewUrl over raw original)
+  // 1. Load source image
   const imgUrl = asset.committedUrl || asset.previewUrl || asset.originalUrl;
   const img = new Image();
   img.crossOrigin = "anonymous";
@@ -87,33 +85,22 @@ export async function renderExportBlob(options: ExportRenderOptions): Promise<Bl
 
   // 3. Render Aesthetic Studio Background Base
   ctx.save();
-  if (asset.backgroundPreset === "Clean Studio") {
+  const scenePreset = asset.scenePreset || "Clean Studio";
+  if (scenePreset === "Clean Studio") {
     const bgGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
     bgGrad.addColorStop(0, "#FFFFFF");
     bgGrad.addColorStop(1, "#FAF5F5");
     ctx.fillStyle = bgGrad;
-  } else if (asset.backgroundPreset === "Soft Silk") {
+  } else if (scenePreset === "Soft Silk") {
     const bgGrad = ctx.createLinearGradient(0, 0, canvasW, canvasH);
     bgGrad.addColorStop(0, "#FFF5EB");
     bgGrad.addColorStop(0.6, "#FDF7F7");
     bgGrad.addColorStop(1, "#FADCD9");
     ctx.fillStyle = bgGrad;
-  } else if (asset.backgroundPreset === "Marble") {
+  } else if (scenePreset === "Marble") {
     const bgGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
     bgGrad.addColorStop(0, "#FBF9F9");
     bgGrad.addColorStop(1, "#EFE8E6");
-    ctx.fillStyle = bgGrad;
-  } else if (asset.backgroundPreset === "Floral") {
-    const bgGrad = ctx.createRadialGradient(
-      canvasW * 0.5,
-      canvasH * 0.4,
-      canvasW * 0.2,
-      canvasW * 0.5,
-      canvasH * 0.5,
-      canvasW * 0.8
-    );
-    bgGrad.addColorStop(0, "#FFF5F7");
-    bgGrad.addColorStop(1, "#FCE4EC");
     ctx.fillStyle = bgGrad;
   } else {
     ctx.fillStyle = "#FFFFFF";
@@ -121,156 +108,73 @@ export async function renderExportBlob(options: ExportRenderOptions): Promise<Bl
   ctx.fillRect(0, 0, canvasW, canvasH);
   ctx.restore();
 
-  // 4. Calculate product placement & scale
-  const scale = Math.min(canvasW / srcW, canvasH / srcH);
+  // 4. Draw Product Image (Scaled to fit neatly inside canvas)
+  ctx.save();
+  ctx.filter = getPresetFilter(asset.beautifyPreset || "Clean Luxury");
+
+  const scale = Math.min(canvasW / srcW, canvasH / srcH) * 0.92;
   const drawW = srcW * scale;
   const drawH = srcH * scale;
-
-  // Normalized transform offset
-  const tf = asset.imageTransform || { normalizedX: 0.5, normalizedY: 0.5 };
-  const offsetX = (tf.normalizedX - 0.5) * (canvasW * 0.5);
-  const offsetY = (tf.normalizedY - 0.5) * (canvasH * 0.5);
-
-  const drawX = (canvasW - drawW) / 2 + offsetX;
-  const drawY = (canvasH - drawH) / 2 + offsetY;
-
-  // 5. Apply filters & Draw Protected Product Image
-  ctx.save();
-  const presetFilter = getPresetFilter(asset.enhancementPreset);
-  const adj = asset.editAdjustments || {
-    exposure: 0,
-    contrast: 0,
-    saturation: 0,
-  };
-  const expFactor = 1 + (adj.exposure || 0) / 100;
-  const conFactor = 1 + (adj.contrast || 0) / 100;
-  const satFactor = 1 + (adj.saturation || 0) / 100;
-
-  const adjFilter = `brightness(${expFactor}) contrast(${conFactor}) saturate(${satFactor})`;
-  ctx.filter = presetFilter !== "none" ? `${presetFilter} ${adjFilter}` : adjFilter;
+  const drawX = (canvasW - drawW) / 2;
+  const drawY = (canvasH - drawH) / 2;
 
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
   ctx.restore();
 
-  // 6. Bake Brand Logo Layer
-  if (includeLogo && asset.logo && asset.logo.enabled && asset.logo.url) {
-    try {
-      const logoImg = new Image();
-      logoImg.crossOrigin = "anonymous";
-      logoImg.src = asset.logo.url;
-      await new Promise((r) => {
-        if (logoImg.complete && logoImg.naturalWidth > 0) r(null);
-        else {
-          logoImg.onload = () => r(null);
-          logoImg.onerror = () => r(null);
-        }
-      });
-
-      if (logoImg.naturalWidth > 0) {
-        ctx.save();
-        ctx.globalAlpha = asset.logo.opacity;
-
-        const baseLogoW = canvasW * (asset.logo.scale / 100) * 0.35;
-        const logoAspect = logoImg.naturalHeight / (logoImg.naturalWidth || 1);
-        const logoW = baseLogoW;
-        const logoH = logoW * logoAspect;
-
-        let lx = canvasW * 0.85;
-        let ly = canvasH * 0.15;
-
-        if (asset.logo.isManualPosition) {
-          lx = canvasW * asset.logo.normalizedX;
-          ly = canvasH * asset.logo.normalizedY;
-        } else {
-          const marginPxX = (canvasW * (asset.logo.margin || 5)) / 100;
-          const marginPxY = (canvasH * (asset.logo.margin || 5)) / 100;
-
-          switch (asset.logo.anchorPosition) {
-            case "top-left":
-              lx = marginPxX + logoW / 2;
-              ly = marginPxY + logoH / 2;
-              break;
-            case "top-center":
-              lx = canvasW / 2;
-              ly = marginPxY + logoH / 2;
-              break;
-            case "top-right":
-              lx = canvasW - marginPxX - logoW / 2;
-              ly = marginPxY + logoH / 2;
-              break;
-            case "center-left":
-              lx = marginPxX + logoW / 2;
-              ly = canvasH / 2;
-              break;
-            case "center":
-              lx = canvasW / 2;
-              ly = canvasH / 2;
-              break;
-            case "center-right":
-              lx = canvasW - marginPxX - logoW / 2;
-              ly = canvasH / 2;
-              break;
-            case "bottom-left":
-              lx = marginPxX + logoW / 2;
-              ly = canvasH - marginPxY - logoH / 2;
-              break;
-            case "bottom-center":
-              lx = canvasW / 2;
-              ly = canvasH - marginPxY - logoH / 2;
-              break;
-            case "bottom-right":
-              lx = canvasW - marginPxX - logoW / 2;
-              ly = canvasH - marginPxY - logoH / 2;
-              break;
-          }
-        }
-
-        ctx.translate(lx, ly);
-        ctx.rotate(((asset.logo.rotation || 0) * Math.PI) / 180);
-        ctx.drawImage(logoImg, -logoW / 2, -logoH / 2, logoW, logoH);
-        ctx.restore();
-      }
-    } catch (e) {
-      console.warn("Logo bake warning:", e);
-    }
-  }
-
-  // 7. Bake Watermark Layer
-  if (includeWatermark && asset.watermark && asset.watermark.enabled) {
-    ctx.save();
-    ctx.globalAlpha = asset.watermark.opacity;
-
+  // 5. Draw Watermark Layer if enabled
+  if (includeWatermark && asset.watermark?.enabled) {
     const wm = asset.watermark;
+    ctx.save();
+    ctx.globalAlpha = wm.opacity;
 
     if (wm.preset === "MÂY Logo") {
       let wx = wm.isManualPosition
         ? canvasW * wm.normalizedX
         : wm.smartPlacement
-        ? canvasW * 0.85
+        ? canvasW * 0.82
         : canvasW * 0.5;
 
       let wy = wm.isManualPosition
         ? canvasH * wm.normalizedY
         : wm.smartPlacement
-        ? canvasH * 0.88
+        ? canvasH * 0.85
         : canvasH * 0.5;
 
       ctx.save();
       ctx.translate(wx, wy);
       ctx.rotate(((wm.rotation || 0) * Math.PI) / 180);
 
-      const fontSize = Math.max(14, Math.round(canvasW * 0.022 * wm.scale));
-      ctx.fillStyle = MAY_BRAND_CONFIG.colors.rosegold;
-      ctx.font = `600 ${fontSize}px "Cinzel", "Playfair Display", serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(MAY_BRAND_CONFIG.name, 0, -fontSize * 0.4);
+      // Load real MÂY brand logo
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = "anonymous";
+        logoImg.src = MAY_BRAND_CONFIG.logoUrl;
+        await new Promise((r) => {
+          if (logoImg.complete && logoImg.naturalWidth > 0) r(null);
+          else {
+            logoImg.onload = () => r(null);
+            logoImg.onerror = () => r(null);
+          }
+        });
 
-      const subFontSize = Math.max(9, Math.round(fontSize * 0.45));
-      ctx.font = `400 ${subFontSize}px "Plus Jakarta Sans", sans-serif`;
-      ctx.fillStyle = MAY_BRAND_CONFIG.colors.muted;
-      ctx.fillText(MAY_BRAND_CONFIG.tagline, 0, fontSize * 0.6);
-      ctx.fillText(MAY_BRAND_CONFIG.contactPhone, 0, fontSize * 1.3);
+        if (logoImg.naturalWidth > 0) {
+          const lW = Math.max(80, Math.round(canvasW * 0.22 * wm.scale));
+          const lH = Math.round(lW * (logoImg.naturalHeight / logoImg.naturalWidth));
+          ctx.drawImage(logoImg, -lW / 2, -lH / 2, lW, lH);
+        } else {
+          const fontSize = Math.max(16, Math.round(canvasW * 0.022 * wm.scale));
+          ctx.fillStyle = MAY_BRAND_CONFIG.colors.rosegold;
+          ctx.font = `600 ${fontSize}px "Cinzel", serif`;
+          ctx.textAlign = "center";
+          ctx.fillText(MAY_BRAND_CONFIG.name, 0, 0);
+        }
+      } catch {
+        const fontSize = Math.max(16, Math.round(canvasW * 0.022 * wm.scale));
+        ctx.fillStyle = MAY_BRAND_CONFIG.colors.rosegold;
+        ctx.font = `600 ${fontSize}px "Cinzel", serif`;
+        ctx.textAlign = "center";
+        ctx.fillText(MAY_BRAND_CONFIG.name, 0, 0);
+      }
 
       ctx.restore();
     } else if (wm.preset === "Security Grid") {

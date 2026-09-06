@@ -15,18 +15,11 @@ export class DemoAIProvider implements ImageAIProvider {
       productBoundingBox: { x: 0.25, y: 0.15, width: 0.5, height: 0.7 },
       detectedLabels: ["MÂY Cosmetics (Physical Packaging)"],
       protectedRegionsCount: 1,
-      recommendation: {
-        action: "ENHANCE",
-        title: "Local Demo Enhancement",
-        reason:
-          "Demo Mode: Cloud AI provider not configured. Product packaging and label text remain 100% untouched using local canvas protection.",
-        confidence: 1.0,
-      },
     };
   }
 
   async enhanceProduct(imageUrl: string, params: EnhancementParams): Promise<CompositingResult> {
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 400));
     return {
       enhancedImageUrl: imageUrl,
       isDemo: true,
