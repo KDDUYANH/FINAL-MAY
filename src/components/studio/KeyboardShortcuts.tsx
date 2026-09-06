@@ -4,18 +4,10 @@ import React, { useEffect } from "react";
 import { useStudioStore } from "@/store/studioStore";
 
 export const KeyboardShortcuts: React.FC = () => {
-  const { undo, redo, removeAsset, activeAssetId, closeBatchPreviewModal, batchPreviewModalOpen } =
-    useStudioStore();
+  const { undo, redo, removeAsset, activeAssetId } = useStudioStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape key closes modal
-      if (e.key === "Escape" && batchPreviewModalOpen) {
-        e.preventDefault();
-        closeBatchPreviewModal();
-        return;
-      }
-
       // Undo: Ctrl/Cmd + Z
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
         e.preventDefault();
@@ -27,13 +19,6 @@ export const KeyboardShortcuts: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && e.shiftKey) {
         e.preventDefault();
         redo();
-        return;
-      }
-
-      // Save: Ctrl/Cmd + S
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault();
-        // Silent save state notification
         return;
       }
 
@@ -52,7 +37,7 @@ export const KeyboardShortcuts: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, removeAsset, activeAssetId, closeBatchPreviewModal, batchPreviewModalOpen]);
+  }, [undo, redo, removeAsset, activeAssetId]);
 
   return null;
 };

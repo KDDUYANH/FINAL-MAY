@@ -1,37 +1,47 @@
-export type ViewMode = "home" | "studio";
+export type MainModule = "CREATE" | "EDIT" | "CONTENT" | "BATCH" | "LIBRARY";
 
-export type WorkflowStep = "UPLOAD" | "ENHANCE" | "PROTECT" | "EXPORT";
+export type JobStatus =
+  | "idle"
+  | "uploading"
+  | "analyzing"
+  | "protecting"
+  | "processing"
+  | "qa"
+  | "ready"
+  | "review"
+  | "failed";
 
-export type ActiveTool =
-  | "UPLOAD"
-  | "ENHANCE"
-  | "EDIT"
-  | "BACKGROUND"
-  | "LOGO"
-  | "PROTECT"
-  | "WATERMARK"
-  | "EXPORT";
+export type HeroEditAction =
+  | "BEAUTIFY" // ✨ Làm đẹp
+  | "CLEAN" // 🧹 Làm sạch
+  | "LIGHTING" // ☀ Ánh sáng
+  | "SCENE" // ◈ Bối cảnh
+  | "ALIGN" // ↔ Căn ảnh
+  | "UPSCALE"; // ↑ Nâng chất lượng
 
-export type InteractionMode = "pan" | "transform" | "logo-drag" | "watermark-drag";
+export type CanvasHistoryStage = "Original" | "Clean" | "Scene" | "Brand" | "Final";
 
 export type EnhancementPreset =
-  | "Clean Luxury"
-  | "Soft Pink"
-  | "Marble Studio"
-  | "Editorial"
+  | "Auto"
   | "Natural"
+  | "Clean Luxury"
+  | "Soft Beauty"
   | "Custom";
 
-export type EnhancementMode = "AUTO" | "BALANCED" | "PREMIUM";
+export type CleanPreset = "Original" | "Cleaned" | "Spotless";
 
-export type BackgroundPreset =
+export type LightingPreset = "Natural" | "Soft Studio" | "Editorial" | "Warm";
+
+export type ScenePreset =
   | "Original"
   | "Clean Studio"
   | "Soft Silk"
   | "Marble"
-  | "Floral";
+  | "Editorial";
 
-export type LightingPreset = "Natural" | "Soft Luxury" | "Warm Studio";
+export type AlignPreset = "Fit" | "1:1" | "4:5" | "9:16" | "16:9" | "Center";
+
+export type QualityPreset = "Standard" | "2K" | "4K";
 
 export type WatermarkPreset = "MÂY Logo" | "Security Grid" | "Diagonal Security";
 
@@ -46,20 +56,15 @@ export type LogoAnchorPosition =
   | "bottom-center"
   | "bottom-right";
 
-export type QAStatus = "RAW" | "PROCESSING" | "READY" | "REVIEW" | "PROTECTED" | "FAILED";
-
-export interface LogoSettings {
-  enabled: boolean;
-  url: string;
-  anchorPosition: LogoAnchorPosition;
-  scale: number; // percentage 10% to 100%
-  opacity: number; // 0 to 1
-  rotation: number; // degrees -180 to 180
-  margin: number; // percentage offset from edges 1% to 20%
-  smartPlacement: boolean;
-  isManualPosition: boolean;
-  normalizedX: number; // 0..1
-  normalizedY: number; // 0..1
+export interface ProtectionDetails {
+  productDetected: boolean;
+  labelProtected: boolean;
+  logoProtected: boolean;
+  textProtected: boolean;
+  geometryChecked: boolean;
+  status: "Protected" | "Review required" | "Failed";
+  boundingBox: { x: number; y: number; width: number; height: number };
+  showProtectedArea: boolean;
 }
 
 export interface WatermarkSettings {
@@ -73,44 +78,23 @@ export interface WatermarkSettings {
   isManualPosition: boolean;
   normalizedX: number; // 0..1
   normalizedY: number; // 0..1
-  textOverride?: string;
-}
-
-export interface ImageTransform {
-  normalizedX: number; // 0.5 = center
-  normalizedY: number; // 0.5 = center
-  widthPx: number;
-  heightPx: number;
-  lockAspectRatio: boolean;
-  rotation: number;
 }
 
 export interface EditAdjustments {
-  exposure: number; // -100 to 100
-  contrast: number; // -100 to 100
-  highlights: number; // -100 to 100
-  shadows: number; // -100 to 100
-  temperature: number; // -100 to 100
-  tint: number; // -100 to 100
-  saturation: number; // -100 to 100
-  sharpness: number; // 0 to 100
-  noiseReduction: number; // 0 to 100
-  clarity: number; // 0 to 100
-  colorIntensity: number; // 0 to 100
-  rotation: number; // 0, 90, 180, 270
-  cropRatio: "Original" | "1:1" | "4:5" | "9:16" | "16:9" | "Free";
-}
-
-export interface AnalysisRecommendation {
-  action: ActiveTool;
-  title: string;
-  reason: string;
-  confidence: number;
+  exposure: number;
+  contrast: number;
+  highlights: number;
+  shadows: number;
+  temperature: number;
+  tint: number;
+  saturation: number;
+  sharpness: number;
+  noiseReduction: number;
 }
 
 export interface EditOperation {
   id: string;
-  type: "enhance" | "edit" | "background" | "lighting" | "logo" | "watermark" | "transform";
+  type: "beautify" | "clean" | "lighting" | "scene" | "align" | "upscale" | "watermark";
   description: string;
   params: Record<string, unknown>;
   timestamp: number;
@@ -119,48 +103,52 @@ export interface EditOperation {
 export interface AssetItem {
   id: string;
   name: string;
-  originalUrl: string; // Source truth
-  committedUrl: string; // Committed applied result
-  previewUrl: string; // Live transient preview
+  originalUrl: string; // Immutable source truth
+  committedUrl: string; // Committed edit result
+  previewUrl: string; // Live canvas render
   hasUncommittedPreview: boolean;
-  isGeneratingPreview: boolean;
-  previewRequestId: number;
   
   width: number;
   height: number;
-  status: QAStatus;
+  jobStatus: JobStatus;
   qaMessage?: string;
-  hasProtectedProduct: boolean;
   
-  // Enhancement & Controls
-  enhancementMode: EnhancementMode;
-  enhancementPreset: EnhancementPreset;
-  backgroundPreset: BackgroundPreset;
+  // Protection architecture
+  protection: ProtectionDetails;
+  
+  // 6 Hero Edit settings
+  beautifyPreset: EnhancementPreset;
+  cleanPreset: CleanPreset;
   lightingPreset: LightingPreset;
+  scenePreset: ScenePreset;
+  alignPreset: AlignPreset;
+  qualityPreset: QualityPreset;
   
-  // Image Transform & Edit
-  imageTransform: ImageTransform;
-  editAdjustments: EditAdjustments;
+  // Fine Adjustments
+  adjustments: EditAdjustments;
   
-  // Overlays
-  logo: LogoSettings;
+  // Watermark
   watermark: WatermarkSettings;
   
-  // Recommendation & History
-  recommendation?: AnalysisRecommendation;
+  // Active Stage in History
+  historyStage: CanvasHistoryStage;
   history: EditOperation[];
   historyIndex: number;
   createdAt: number;
 }
 
-export type ZoomLevel = "FIT" | 0.25 | 0.5 | 1.0;
+export interface ContentPackVisual {
+  id: string;
+  label: string;
+  ratio: "16:9" | "1:1" | "4:5" | "9:16";
+  dimensions: string;
+  desc: string;
+  previewFilter: string;
+}
 
-export interface PreflightQA {
-  productProtected: boolean;
-  logoValid: boolean;
-  watermarkSafe: boolean;
-  formatValid: boolean;
-  estimatedSizeMB: string;
-  outputWidth: number;
-  outputHeight: number;
+export interface ContentPackCopy {
+  hook: string;
+  caption: string;
+  cta: string;
+  hashtags: string[];
 }

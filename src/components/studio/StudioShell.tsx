@@ -3,44 +3,27 @@
 import React from "react";
 import { useStudioStore } from "@/store/studioStore";
 import { Header } from "./Header";
-import { ToolSidebar } from "./ToolSidebar";
-import { StudioCanvas } from "./StudioCanvas";
-import { InspectorPanel } from "./InspectorPanel";
-import { BatchDock } from "./BatchDock";
-import { HomeDashboard } from "./HomeDashboard";
-import { BatchPreviewModal } from "./BatchPreviewModal";
-import { KeyboardShortcuts } from "./KeyboardShortcuts";
+import { CreateModule } from "./CreateModule";
+import { EditModule } from "./EditModule";
+import { ContentModule } from "./ContentModule";
+import { BatchModule } from "./BatchModule";
+import { LibraryModule } from "./LibraryModule";
 
 export const StudioShell: React.FC = () => {
-  const { viewMode } = useStudioStore();
-
-  if (viewMode === "home") {
-    return (
-      <>
-        <KeyboardShortcuts />
-        <HomeDashboard />
-      </>
-    );
-  }
+  const { activeModule } = useStudioStore();
 
   return (
     <div className="w-screen h-screen flex flex-col bg-may-surface text-may-dark font-sans overflow-hidden select-none">
-      <KeyboardShortcuts />
       <Header />
 
-      {/* Main 3-Zone Workspace */}
+      {/* Main Module Viewport */}
       <div className="flex-1 flex overflow-hidden relative">
-        <ToolSidebar />
-
-        <main className="flex-1 relative overflow-hidden bg-may-surface">
-          <StudioCanvas />
-        </main>
-
-        <InspectorPanel />
+        {activeModule === "CREATE" && <CreateModule />}
+        {activeModule === "EDIT" && <EditModule />}
+        {activeModule === "CONTENT" && <ContentModule />}
+        {activeModule === "BATCH" && <BatchModule />}
+        {activeModule === "LIBRARY" && <LibraryModule />}
       </div>
-
-      <BatchDock />
-      <BatchPreviewModal />
     </div>
   );
 };
