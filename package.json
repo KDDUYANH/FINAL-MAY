@@ -17,6 +17,11 @@
     "tailwind-merge": "^3.0.1",
     "zustand": "^5.0.3"
   },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-musl": "15.1.7",
+    "@next/swc-linux-x64-gnu": "15.1.7",
+    "@next/swc-win32-x64-msvc": "15.1.7"
+  },
   "devDependencies": {
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.10",
