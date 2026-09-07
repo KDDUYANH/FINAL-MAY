@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240" fill="none">
+  <defs>
+    <linearGradient id="mayGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2D6" />
+      <stop offset="40%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#996E14" />
+    </linearGradient>
+  </defs>
+
+  <!-- Cloud Contour -->
+  <path
+    d="M 60,130 C 35,130 20,105 30,75 C 40,40 85,35 105,50 C 120,20 170,15 195,45 C 220,25 260,40 265,75 C 275,110 245,135 220,135"
+    stroke="url(#mayGold)"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Mountain Silhouette -->
+  <path
+    d="M 95,95 L 125,55 L 150,90 M 145,75 L 165,48 L 195,95"
+    stroke="url(#mayGold)"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Profile of Serene Maiden -->
+  <path
+    d="M 125,75 C 150,75 185,90 195,115 C 202,128 200,140 185,148 C 175,153 170,165 178,172 C 172,175 160,172 155,162 C 145,145 130,130 100,128 C 70,126 50,145 40,165"
+    stroke="url(#mayGold)"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+  <!-- Closed Eye & Gentle Lips -->
+  <path d="M 164,108 C 170,104 178,105 184,109" stroke="url(#mayGold)" stroke-width="4.5" stroke-linecap="round" />
+  <path d="M 168,118 C 174,121 179,121 183,118" stroke="url(#mayGold)" stroke-width="4" stroke-linecap="round" />
+  <path d="M 188,118 L 193,127 L 186,131 C 188,135 189,139 183,141" stroke="url(#mayGold)" stroke-width="4" stroke-linecap="round" />
+
+  <!-- Dynamic Ocean Wave Curve -->
+  <path
+    d="M 60,185 C 90,185 110,150 130,150 C 142,150 148,162 138,172 C 128,182 110,182 115,195 C 120,205 145,200 170,180 C 190,165 215,155 245,165"
+    stroke="url(#mayGold)"
+    stroke-width="6.5"
+    stroke-linecap="round"
+  />
+
+  <!-- Makeup Brush Detail -->
+  <g transform="translate(195, 145) rotate(-22)">
+    <path d="M 0,20 L 55,5" stroke="url(#mayGold)" stroke-width="7" stroke-linecap="round" />
+    <path d="M 55,5 L 68,2" stroke="url(#mayGold)" stroke-width="10" stroke-linecap="round" />
+    <path d="M 68,2 C 78,-2 92,2 96,10 C 92,16 78,14 68,6 Z" fill="url(#mayGold)" />
+  </g>
+</svg>
