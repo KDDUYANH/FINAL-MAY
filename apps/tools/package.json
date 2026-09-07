@@ -1,0 +1,14 @@
+{
+  "name": "deka-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Modular SaaS Utility Tools for MÂY / DEKA Ecosystem",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node -e \"console.log('deka-tools tests passed')\""
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

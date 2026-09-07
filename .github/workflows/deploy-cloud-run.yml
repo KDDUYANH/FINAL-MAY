@@ -1,0 +1,66 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'apps/**'
+      - '.github/workflows/deploy-cloud-run.yml'
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: asia-southeast1
+  REGISTRY: asia-southeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/deka
+
+jobs:
+  deploy-cloud-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
+
+      # 1. Deploy deka-api
+      - name: Build & Deploy deka-api
+        run: |
+          docker build -t $REGISTRY/api:${{ github.sha }} -t $REGISTRY/api:latest -f apps/api/Dockerfile apps/api
+          docker push $REGISTRY/api:${{ github.sha }}
+          docker push $REGISTRY/api:latest
+          gcloud run deploy deka-api \
+            --image $REGISTRY/api:${{ github.sha }} \
+            --region $GCP_REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 20 \
+            --memory 512Mi \
+            --cpu 1
+
+      # 2. Deploy deka-may
+      - name: Build & Deploy deka-may
+        run: |
+          API_URL=$(gcloud run services describe deka-api --region $GCP_REGION --format 'value(status.url)')
+          docker build -t $REGISTRY/may:${{ github.sha }} -t $REGISTRY/may:latest -f apps/may/Dockerfile apps/may
+          docker push $REGISTRY/may:${{ github.sha }}
+          docker push $REGISTRY/may:latest
+          gcloud run deploy deka-may \
+            --image $REGISTRY/may:${{ github.sha }} \
+            --region $GCP_REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 10 \
+            --memory 1Gi \
+            --cpu 1 \
+            --set-env-vars NEXT_PUBLIC_API_URL=$API_URL

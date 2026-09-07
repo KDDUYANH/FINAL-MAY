@@ -1,0 +1,39 @@
+{
+  "rule": [
+    {
+      "action": {
+        "type": "Delete"
+      },
+      "condition": {
+        "age": 3,
+        "matchesPrefix": [
+          "temp/",
+          "uploads/unconfirmed/"
+        ]
+      }
+    },
+    {
+      "action": {
+        "type": "SetStorageClass",
+        "storageClass": "NEARLINE"
+      },
+      "condition": {
+        "age": 60,
+        "matchesPrefix": [
+          "processed/",
+          "exports/",
+          "projects/"
+        ]
+      }
+    },
+    {
+      "action": {
+        "type": "Delete"
+      },
+      "condition": {
+        "numNewerVersions": 2,
+        "isLive": false
+      }
+    }
+  ]
+}

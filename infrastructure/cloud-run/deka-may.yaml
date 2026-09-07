@@ -1,0 +1,36 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: deka-may
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0" # Scale to zero when idle
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 60
+      serviceAccountName: deka-cloud-run@PROJECT_ID.iam.gserviceaccount.com
+      containers:
+        - image: REGISTRY_HOST/PROJECT_ID/deka/may:latest
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "8080"
+            - name: BRAND_NAME
+              value: "MÂY"
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://deka-api-PROJECT_ID.asia-southeast1.run.app"

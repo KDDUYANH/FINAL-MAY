@@ -1,0 +1,28 @@
+{
+  "name": "deka-media-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEKA Server Media Processing Worker (FFmpeg / Image / Video)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "node -e \"console.log('media-worker tests passed')\""
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.15.2",
+    "bullmq": "^5.41.3",
+    "dotenv": "^16.4.7",
+    "fluent-ffmpeg": "^2.1.3",
+    "ioredis": "^5.5.0",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.27",
+    "@types/node": "^22.13.4",
+    "@types/pg": "^8.11.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

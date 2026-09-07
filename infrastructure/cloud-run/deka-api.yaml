@@ -1,0 +1,46 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: deka-api
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0" # Scale to zero when idle
+        autoscaling.knative.dev/maxScale: "20"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 60
+      serviceAccountName: deka-cloud-run@PROJECT_ID.iam.gserviceaccount.com
+      containers:
+        - image: REGISTRY_HOST/PROJECT_ID/deka/api:latest
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "8080"
+            - name: GCS_BUCKET
+              value: "deka-media-PROJECT_ID"
+            - name: DEKA_SERVER_URL
+              value: "https://deka-server-ip.nip.io"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: DATABASE_URL
+                  key: latest
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: INTERNAL_API_KEY
+                  key: latest

@@ -1,0 +1,51 @@
+name: Continuous Integration & Validation
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate API Gateway
+        run: |
+          cd apps/api
+          npm install
+          npm run build
+          npm test
+
+      - name: Validate MÂY Frontend Studio
+        run: |
+          cd apps/may
+          npm install
+          npm run build
+
+      - name: Validate DEKA Media Worker
+        run: |
+          cd services/media-worker
+          npm install
+          npm run build
+          npm test
+
+      - name: Validate DEKA AI Worker
+        run: |
+          cd services/ai-worker
+          npm install
+          npm run build
+          npm test
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose config -q
+          docker compose -f docker/deka-server/docker-compose.yml config -q

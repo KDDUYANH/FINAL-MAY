@@ -1,0 +1,128 @@
+# Local Development Environment for MÂY / DEKA Ecosystem
+# Run: docker compose up -d
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: deka_dev
+      POSTGRES_PASSWORD: deka_dev_password
+      POSTGRES_DB: deka_development
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - local_net
+
+  # 2. Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - local_net
+
+  # 3. Cloud Run API Gateway (Local)
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DATABASE_URL=postgresql://deka_dev:deka_dev_password@postgres:5432/deka_development
+      - GCS_BUCKET=deka-media-local
+      - DEKA_SERVER_URL=http://internal-api:4000
+      - INTERNAL_API_KEY=local-secret-key
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - local_net
+
+  # 4. Internal DEKA Dispatcher API (Local)
+  internal-api:
+    build:
+      context: ./services/api-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - REDIS_URL=redis://redis:6379
+      - INTERNAL_API_KEY=local-secret-key
+    depends_on:
+      - redis
+    networks:
+      - local_net
+
+  # 5. Media Worker (Local)
+  media-worker:
+    build:
+      context: ./services/media-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - GCS_BUCKET=deka-media-local
+      - DATABASE_URL=postgresql://deka_dev:deka_dev_password@postgres:5432/deka_development
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - local_net
+
+  # 6. AI Worker (Local)
+  ai-worker:
+    build:
+      context: ./services/ai-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://deka_dev:deka_dev_password@postgres:5432/deka_development
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - local_net
+
+  # 7. MÂY Frontend Studio (Local)
+  may:
+    build:
+      context: ./apps/may
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - api
+    networks:
+      - local_net
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  local_net:
+    driver: bridge

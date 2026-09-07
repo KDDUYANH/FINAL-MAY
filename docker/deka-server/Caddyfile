@@ -1,0 +1,27 @@
+# Caddyfile for DEKA Server (Reverse Proxy & TLS termination)
+{
+    email admin@maystudio.app
+}
+
+# In production, replace with your custom domain e.g. deka-internal.yourdomain.com
+:80, :443 {
+    # Forward all /api/v1/jobs to the internal api-service
+    reverse_proxy /api/* api-service:4000
+    reverse_proxy /health api-service:4000
+    reverse_proxy /queue-status api-service:4000
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Logging
+    log {
+        output stdout
+        format json
+    }
+}

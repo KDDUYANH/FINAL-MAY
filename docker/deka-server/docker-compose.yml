@@ -1,0 +1,103 @@
+# Production Docker Compose stack for DEKA Server (Compute Engine)
+version: '3.8'
+
+services:
+  # Automated TLS reverse proxy & edge gateway
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - deka_internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Internal queue and pub/sub message broker
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - deka_internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  # Internal Job Dispatcher API (receives tasks from Cloud Run)
+  api-service:
+    image: ${REGISTRY_HOST:-asia-southeast1-docker.pkg.dev}/${GCP_PROJECT_ID}/deka/api-service:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+    networks:
+      - deka_internal
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  # Persistent Media Worker (FFmpeg transcoding & HLS)
+  media-worker:
+    image: ${REGISTRY_HOST:-asia-southeast1-docker.pkg.dev}/${GCP_PROJECT_ID}/deka/media-worker:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - GCS_BUCKET=${GCS_BUCKET}
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      - deka_internal
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 3072M
+
+  # Asynchronous AI Worker (Google Gemini / Product Integrity)
+  ai-worker:
+    image: ${REGISTRY_HOST:-asia-southeast1-docker.pkg.dev}/${GCP_PROJECT_ID}/deka/ai-worker:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - DATABASE_URL=${DATABASE_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    networks:
+      - deka_internal
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 1024M
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_data:
+
+networks:
+  deka_internal:
+    driver: bridge
