@@ -1,49 +1,44 @@
 import React from 'react';
-import { 
-  Upload, 
-  Wand2, 
-  Palette, 
-  FileText,
-  Layers, 
-  Download
-} from 'lucide-react';
+import { LayoutGrid, Wand2, Download } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
-import { Stage } from '../../types/studio';
 
 export const MobileNav: React.FC = () => {
-  const { stage, setStage, themeMode } = useStudioStore();
+  const { currentView, setView, openExport, themeMode } = useStudioStore();
   const isDark = themeMode === 'quiet-luxury';
 
-  const stages: { id: Stage; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'create', label: 'Create', icon: Upload },
-    { id: 'edit', label: 'Edit', icon: Wand2 },
-    { id: 'brand', label: 'Brand', icon: Palette },
-    { id: 'content', label: 'Content', icon: FileText },
-    { id: 'batch', label: 'Batch', icon: Layers },
-    { id: 'export', label: 'Export', icon: Download },
-  ];
-
   return (
-    <div className={`md:hidden h-16 border-t px-4 flex items-center justify-around z-30 shrink-0 select-none ${
-      isDark ? 'bg-[#1C1618] border-[#322427]' : 'bg-white border-[#EFE4DE]'
-    }`}>
-      {stages.map((st) => {
-        const Icon = st.icon;
-        const isCurrent = stage === st.id;
+    <div
+      className={`md:hidden h-14 border-t px-6 flex items-center justify-around z-30 shrink-0 select-none ${
+        isDark ? 'bg-[#1C1618] border-[#322427]' : 'bg-white border-[#EFE4DE]'
+      }`}
+    >
+      <button
+        onClick={() => setView('home')}
+        className={`flex flex-col items-center gap-1 p-1 rounded-xl transition-all ${
+          currentView === 'home' ? 'text-[#B76E79] font-bold' : 'opacity-60 hover:opacity-100'
+        }`}
+      >
+        <LayoutGrid className="w-4 h-4" />
+        <span className="text-[10px]">Trang chủ</span>
+      </button>
 
-        return (
-          <button
-            key={st.id}
-            onClick={() => setStage(st.id)}
-            className={`flex flex-col items-center gap-1 p-1.5 rounded-xl transition-all cursor-pointer ${
-              isCurrent ? 'text-[#B76E79] font-bold scale-105' : 'text-neutral-500 hover:text-neutral-900'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            <span className="text-[10px]">{st.label}</span>
-          </button>
-        );
-      })}
+      <button
+        onClick={() => setView('studio')}
+        className={`flex flex-col items-center gap-1 p-1 rounded-xl transition-all ${
+          currentView === 'studio' ? 'text-[#B76E79] font-bold' : 'opacity-60 hover:opacity-100'
+        }`}
+      >
+        <Wand2 className="w-4 h-4" />
+        <span className="text-[10px]">Studio</span>
+      </button>
+
+      <button
+        onClick={openExport}
+        className="flex flex-col items-center gap-1 p-1 rounded-xl opacity-60 hover:opacity-100 transition-all text-[#B76E79]"
+      >
+        <Download className="w-4 h-4" />
+        <span className="text-[10px]">Xuất ảnh</span>
+      </button>
     </div>
   );
 };

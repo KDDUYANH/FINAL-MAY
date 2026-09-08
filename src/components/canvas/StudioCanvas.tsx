@@ -3,15 +3,17 @@ import {
   Eye, 
   ZoomIn, 
   ZoomOut, 
-  ShieldCheck, 
+  RotateCcw, 
+  Columns, 
   Sparkles, 
-  Columns 
+  Check, 
+  X, 
+  SplitSquareVertical 
 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 import { InspectionLoupe } from './InspectionLoupe';
-import { ProtectedMaskOverlay } from './ProtectedMaskOverlay';
-import { MayBrandMark } from '../brand/MayBrandMark';
+import { BrandLogo } from '../brand/BrandLogo';
 
 export const StudioCanvas: React.FC = () => {
   const {
@@ -27,9 +29,11 @@ export const StudioCanvas: React.FC = () => {
     setLoupeActive,
     loupePos,
     setLoupePos,
-    showProtectedOverlay,
-    toggleProtectedOverlay,
-    themeMode
+    isPreviewDirty,
+    applyPreview,
+    cancelPreview,
+    resetToOriginal,
+    themeMode,
   } = useStudioStore();
 
   const isDark = themeMode === 'quiet-luxury';
@@ -37,57 +41,75 @@ export const StudioCanvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Aspect ratio calculation for the canvas container
+  // Pan state for 100% / 200% zoom
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+
   const getAspectRatioClass = () => {
     switch (activeAsset?.recipe?.aspectRatio) {
       case '1:1':
         return 'aspect-square max-h-[64vh]';
       case '4:5':
-        return 'aspect-[4/5] max-h-[66vh]';
+        return 'aspect-[4/5] max-h-[68vh]';
       case '3:4':
-        return 'aspect-[3/4] max-h-[66vh]';
+        return 'aspect-[3/4] max-h-[68vh]';
       case '9:16':
-        return 'aspect-[9/16] max-h-[70vh]';
+        return 'aspect-[9/16] max-h-[72vh]';
       case '16:9':
-        return 'aspect-[16/9] max-h-[58vh]';
+        return 'aspect-[16/9] max-h-[56vh]';
+      case 'original':
       default:
-        return 'aspect-[4/5] max-h-[66vh]';
+        return 'aspect-[4/5] max-h-[68vh]';
     }
   };
 
-  const handlePointerMove = useCallback((clientX: number, clientY: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+  const handlePointerMove = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
 
-    if (isDragging) {
-      const x = clientX - rect.left;
-      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      setSliderPosition(pct);
-    }
+      if (isDragging) {
+        const x = clientX - rect.left;
+        const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+        setSliderPosition(pct);
+      }
 
-    if (isLoupeActive) {
-      const x = ((clientX - rect.left) / rect.width) * 100;
-      const y = ((clientY - rect.top) / rect.height) * 100;
-      setLoupePos({
-        x: Math.max(0, Math.min(100, x)),
-        y: Math.max(0, Math.min(100, y))
-      });
-    }
-  }, [isDragging, isLoupeActive, setSliderPosition, setLoupePos]);
+      if (isLoupeActive) {
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        setLoupePos({
+          x: Math.max(0, Math.min(100, x)),
+          y: Math.max(0, Math.min(100, y)),
+        });
+      }
 
-  const onMouseMove = (e: React.MouseEvent) => {
-    handlePointerMove(e.clientX, e.clientY);
-  };
+      if (isPanning) {
+        const dx = clientX - panStartRef.current.x;
+        const dy = clientY - panStartRef.current.y;
+        setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+        panStartRef.current = { x: clientX, y: clientY };
+      }
+    },
+    [isDragging, isLoupeActive, isPanning, setSliderPosition, setLoupePos]
+  );
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length > 0) {
-      handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 1 || (e.button === 0 && zoomLevel > 100 && !isDragging)) {
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX, y: e.clientY };
     }
   };
 
   useEffect(() => {
-    const onMouseUp = () => setIsDragging(false);
-    const onTouchEnd = () => setIsDragging(false);
+    const onMouseUp = () => {
+      setIsDragging(false);
+      setIsPanning(false);
+    };
+    const onTouchEnd = () => {
+      setIsDragging(false);
+      setIsPanning(false);
+    };
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('touchend', onTouchEnd);
     return () => {
@@ -98,174 +120,111 @@ export const StudioCanvas: React.FC = () => {
 
   if (!activeAsset) return null;
 
-  // Render Watermark Engine onto the canvas
+  // Real Brand Logo Watermark Layer
   const renderWatermarkLayer = () => {
     const brand = activeAsset.brand;
-    if (!brand.watermarkEnabled) return null;
+    if (!brand?.watermarkEnabled) return null;
 
-    const opacity = (brand.watermarkOpacity || 20) / 100;
+    const opacity = (brand.watermarkOpacity || 25) / 100;
     const scale = (brand.watermarkScale || 35) / 100;
 
-    if (brand.watermarkMode === 'security') {
-      return (
-        <div
-          className="absolute inset-0 pointer-events-none z-20 overflow-hidden select-none"
-          style={{
-            opacity,
-            transform: `rotate(${brand.watermarkRotation || 45}deg) scale(1.4)`
-          }}
-        >
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(45deg, rgba(183,110,121,0.25) 0, rgba(183,110,121,0.25) 1px, transparent 0, transparent 90px)'
-            }}
-          />
-          <div className="grid grid-cols-4 grid-rows-4 w-[160%] h-[160%] -ml-[30%] -mt-[30%] gap-10 p-6">
-            {Array.from({ length: 16 }).map((_, idx) => (
-              <div key={idx} className="flex flex-col items-center justify-center" style={{ transform: `scale(${scale * 0.75})` }}>
-                <MayBrandMark className="w-20 h-20" variant="rose-gold" showWordmark={true} showSlogan={false} />
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (brand.watermarkMode === 'logo' || brand.watermarkMode === 'subtle') {
-      // Position calculation
-      const posClass = () => {
-        switch (brand.watermarkPosition) {
-          case 'top_left': return 'top-6 left-6';
-          case 'top_right': return 'top-6 right-6';
-          case 'bottom_left': return 'bottom-6 left-6';
-          case 'center': return 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
-          case 'bottom_right':
-          default: return 'bottom-6 right-6';
-        }
-      };
-
-      return (
-        <div 
-          className={`absolute ${posClass()} pointer-events-none z-20 select-none transition-all duration-300`}
-          style={{ opacity, transform: `scale(${scale * 1.1})` }}
-        >
-          <MayBrandMark 
-            className="w-24 h-24" 
-            variant="rose-gold" 
-            showWordmark={true} 
-            showSlogan={brand.watermarkMode === 'logo'} 
-            assetId={brand.logoAsset}
-          />
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  // Render Official Brand Logo Placement
-  const renderLogoLayer = () => {
-    const brand = activeAsset.brand;
-    if (!brand.logoEnabled) return null;
-
     const posClass = () => {
-      switch (brand.logoPosition) {
-        case 'top_left': return 'top-5 left-5';
-        case 'top_right': return 'top-5 right-5';
-        case 'bottom_left': return 'bottom-5 left-5';
-        case 'center': return 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
+      switch (brand.watermarkPosition) {
+        case 'top_left':
+          return 'top-6 left-6';
+        case 'top_right':
+          return 'top-6 right-6';
+        case 'bottom_left':
+          return 'bottom-6 left-6';
+        case 'center':
+          return 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
+        case 'auto':
         case 'bottom_right':
-        default: return 'bottom-5 right-5';
+        default:
+          return 'bottom-6 right-6';
       }
     };
 
-    const logoSize = (brand.logoSize || 22) * 4.5;
-    const opacity = (brand.logoOpacity || 85) / 100;
-
     return (
-      <div 
-        className={`absolute ${posClass()} pointer-events-none z-22 transition-all duration-300 select-none`}
-        style={{ width: `${logoSize}px`, opacity }}
+      <div
+        className={`absolute ${posClass()} pointer-events-none z-20 select-none transition-all duration-300`}
+        style={{
+          opacity,
+          transform: `scale(${scale * 1.2}) rotate(${brand.watermarkRotation || 0}deg)`,
+        }}
       >
-        <MayBrandMark 
-          className="w-full h-auto" 
-          variant="gold" 
-          showWordmark={true} 
-          showSlogan={true}
-          assetId={brand.logoAsset}
-        />
+        <BrandLogo variant="mark" className="w-20 h-auto" />
       </div>
     );
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative select-none">
-      {/* 1. TOP VIEWPORT ACTION BAR */}
-      <div className={`h-12 border-b px-6 flex items-center justify-between shrink-0 z-10 ${
-        isDark ? 'bg-[#181315]/90 border-[#322427]' : 'bg-white/90 border-[#EFE4DE]'
-      }`}>
-        {/* View Mode Switcher */}
+    <div className="flex-1 flex flex-col overflow-hidden relative select-none h-full">
+      {/* 1. TOP VIEWPORT CONTROLS BAR */}
+      <div
+        className={`h-12 border-b px-6 flex items-center justify-between shrink-0 z-10 ${
+          isDark ? 'bg-[#181315]/90 border-[#322427]' : 'bg-white/90 border-[#EFE4DE]'
+        }`}
+      >
+        {/* View Mode: Split / Side-by-side / After / Before */}
         <div className="flex items-center gap-2">
-          <div className={`flex items-center p-0.5 rounded-xl border text-xs font-semibold ${
-            isDark ? 'bg-[#22181B] border-[#38262A]' : 'bg-[#FAF3EF] border-[#EADBD3]'
-          }`}>
+          <div
+            className={`flex items-center p-0.5 rounded-xl border text-xs font-semibold ${
+              isDark ? 'bg-[#22181B] border-[#38262A]' : 'bg-[#FAF3EF] border-[#EADBD3]'
+            }`}
+          >
             <button
               onClick={() => setViewMode('split')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
-                viewMode === 'split' 
-                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold' 
-                  : 'text-neutral-500 hover:text-neutral-900'
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'split'
+                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold'
+                  : 'opacity-70 hover:opacity-100'
               }`}
             >
               <Columns className="w-3.5 h-3.5" />
-              <span>Split So Sánh</span>
+              <span>Split So sánh</span>
+            </button>
+            <button
+              onClick={() => setViewMode('side-by-side')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'side-by-side'
+                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              <SplitSquareVertical className="w-3.5 h-3.5" />
+              <span>Song song (Side-by-side)</span>
             </button>
             <button
               onClick={() => setViewMode('after')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
-                viewMode === 'after' 
-                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold' 
-                  : 'text-neutral-500 hover:text-neutral-900'
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'after'
+                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold'
+                  : 'opacity-70 hover:opacity-100'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Kết Quả AI</span>
+              <span>Kết quả AI</span>
             </button>
             <button
               onClick={() => setViewMode('before')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
-                viewMode === 'before' 
-                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold' 
-                  : 'text-neutral-500 hover:text-neutral-900'
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'before'
+                  ? 'bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white shadow-xs font-bold'
+                  : 'opacity-70 hover:opacity-100'
               }`}
             >
-              <span>Ảnh Gốc (RAW)</span>
+              <span>Ảnh gốc</span>
             </button>
           </div>
         </div>
 
-        {/* Product Protection Indicator & Loupe */}
+        {/* Zoom & Inspection Controls */}
         <div className="flex items-center gap-3">
-          {/* Protected Area Quick Toggle */}
-          <button
-            onClick={toggleProtectedOverlay}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-all ${
-              showProtectedOverlay
-                ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                : isDark
-                ? 'bg-[#251A1D] border-[#442D32] text-emerald-400 hover:bg-[#2F2125]'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Product protected ✓</span>
-          </button>
-
-          {/* 200% Loupe Inspector */}
+          {/* 200% Loupe toggle */}
           <button
             onClick={() => setLoupeActive(!isLoupeActive)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
               isLoupeActive
                 ? 'bg-[#B76E79] text-white border-[#8C4752] shadow-xs'
                 : isDark
@@ -274,111 +233,195 @@ export const StudioCanvas: React.FC = () => {
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>Kính Lúp 200%</span>
+            <span>Kính lúp 200%</span>
           </button>
 
-          {/* Zoom Level */}
-          <div className={`flex items-center gap-1 text-xs border rounded-xl px-2 py-0.5 ${
-            isDark ? 'bg-[#251A1D] border-[#442D32]' : 'bg-white border-[#E5D6CF]'
-          }`}>
-            <button 
-              onClick={() => setZoomLevel(Math.max(60, zoomLevel - 15))}
+          {/* Quick Zoom Presets: Fit / 100% / 200% */}
+          <div
+            className={`flex items-center gap-1 text-xs border rounded-xl px-2 py-0.5 ${
+              isDark ? 'bg-[#251A1D] border-[#442D32]' : 'bg-white border-[#E5D6CF]'
+            }`}
+          >
+            <button
+              onClick={() => {
+                setZoomLevel(100);
+                setPan({ x: 0, y: 0 });
+              }}
+              className="p-1 hover:text-[#B76E79] text-[10px] font-bold"
+              title="Vừa màn hình (Fit)"
+            >
+              Fit
+            </button>
+            <button
+              onClick={() => setZoomLevel(Math.max(50, zoomLevel - 20))}
               className="p-1 hover:text-[#B76E79]"
               title="Thu nhỏ"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="w-11 text-center font-mono font-medium">{zoomLevel}%</span>
-            <button 
-              onClick={() => setZoomLevel(Math.min(180, zoomLevel + 15))}
+            <span className="w-10 text-center font-mono font-medium">{zoomLevel}%</span>
+            <button
+              onClick={() => setZoomLevel(Math.min(200, zoomLevel + 20))}
               className="p-1 hover:text-[#B76E79]"
               title="Phóng to"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Reset Image */}
+          <button
+            onClick={resetToOriginal}
+            className={`p-2 rounded-xl border text-neutral-400 hover:text-red-500 transition-colors cursor-pointer ${
+              isDark ? 'border-[#442D32] hover:bg-[#251A1D]' : 'border-[#E5D6CF] hover:bg-[#FAF3EF]'
+            }`}
+            title="Khôi phục trạng thái gốc ban đầu"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
-      {/* 2. MAIN INTERACTIVE VIEWPORT STAGE */}
-      <div 
-        className="flex-1 flex items-center justify-center p-6 overflow-hidden relative cursor-crosshair"
-        onMouseMove={onMouseMove}
-        onTouchMove={onTouchMove}
-      >
-        <div
-          ref={containerRef}
-          className={`relative w-full max-w-2xl ${getAspectRatioClass()} rounded-3xl overflow-hidden shadow-2xl border-4 transition-all duration-200 ${
-            isDark ? 'border-[#38282C] bg-[#1A1315]' : 'border-white bg-white'
-          }`}
-          style={{ transform: `scale(${zoomLevel / 100})` }}
-        >
-          {/* Base Layer: Enhanced / After Image */}
-          <div className="absolute inset-0">
-            <img 
-              src={activeAsset.afterImg || activeAsset.beforeImg} 
-              alt={activeAsset.name} 
-              className="w-full h-full object-cover select-none" 
-            />
+      {/* 2. FLOATING PREVIEW COMMIT BAR (Section 11 & 12) */}
+      {isPreviewDirty && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 rounded-2xl shadow-xl border backdrop-blur-md animate-slideDown bg-[#241B1E]/95 border-[#B76E79]/60 text-white">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#FDE3E5]">
+            <Sparkles className="w-3.5 h-3.5 text-[#B76E79] animate-pulse" />
+            <span>Đang xem trước thay đổi</span>
           </div>
+          <div className="h-4 w-px bg-white/20" />
+          <button
+            onClick={cancelPreview}
+            className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
+          >
+            <X className="w-3 h-3" />
+            <span>Hủy (Cancel)</span>
+          </button>
+          <button
+            onClick={applyPreview}
+            className="flex items-center gap-1.5 px-3.5 py-1 rounded-xl text-xs font-bold bg-gradient-to-r from-[#B76E79] to-[#8C4752] text-white shadow-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+          >
+            <Check className="w-3 h-3" />
+            <span>Áp dụng (Apply)</span>
+          </button>
+        </div>
+      )}
 
-          {/* Split / Before Layer */}
-          {(viewMode === 'split' || viewMode === 'before') && (
-            <div
-              className="absolute inset-0 overflow-hidden select-none"
-              style={{
-                clipPath: viewMode === 'split' 
-                  ? `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` 
-                  : 'none'
-              }}
-            >
-              <img 
-                src={activeAsset.beforeImg} 
-                alt="Original RAW" 
-                className="w-full h-full object-cover select-none filter brightness-95" 
-              />
-              {/* Subtle Tag on Raw Side */}
-              <div className="absolute top-4 left-4 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-md font-mono">
-                ORIGINAL RAW
+      {/* 3. MAIN CANVAS VIEWPORT */}
+      <div
+        className="flex-1 flex items-center justify-center p-6 overflow-hidden relative cursor-crosshair"
+        onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
+        onTouchMove={(e) => {
+          if (e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        }}
+        onMouseDown={onMouseDown}
+      >
+        {/* Side-by-side mode */}
+        {viewMode === 'side-by-side' ? (
+          <div className="flex items-center justify-center gap-6 w-full max-w-4xl h-full">
+            {/* Left: Original RAW */}
+            <div className="flex-1 flex flex-col items-center">
+              <span className="text-[11px] font-bold font-mono uppercase opacity-70 mb-2">Ảnh Gốc (RAW)</span>
+              <div
+                className={`w-full ${getAspectRatioClass()} rounded-2xl overflow-hidden shadow-lg border-2 border-inherit relative`}
+              >
+                <img
+                  src={activeAsset.beforeImg}
+                  alt="Original"
+                  className="w-full h-full object-cover select-none"
+                />
               </div>
             </div>
-          )}
-
-          {/* Subtle Tag on AI Enhanced Side */}
-          {viewMode === 'split' && (
-            <div className="absolute top-4 right-4 bg-[#B76E79]/85 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-md font-bold shadow-md">
-              MÂY PROFESSIONAL
+            {/* Right: AI Result */}
+            <div className="flex-1 flex flex-col items-center">
+              <span className="text-[11px] font-bold font-mono uppercase text-[#B76E79] mb-2 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                <span>Kết quả MÂY Studio</span>
+              </span>
+              <div
+                className={`w-full ${getAspectRatioClass()} rounded-2xl overflow-hidden shadow-lg border-2 border-[#B76E79]/40 relative`}
+              >
+                <img
+                  src={activeAsset.afterImg || activeAsset.beforeImg}
+                  alt="AI Enhanced"
+                  className="w-full h-full object-cover select-none"
+                />
+                {renderWatermarkLayer()}
+              </div>
             </div>
-          )}
+          </div>
+        ) : (
+          /* Single / Split Mode Viewport */
+          <div
+            ref={containerRef}
+            className={`relative w-full max-w-2xl ${getAspectRatioClass()} rounded-3xl overflow-hidden shadow-2xl border-4 transition-transform duration-100 ${
+              isDark ? 'border-[#38282C] bg-[#1A1315]' : 'border-white bg-white'
+            }`}
+            style={{
+              transform: `scale(${zoomLevel / 100}) translate(${pan.x}px, ${pan.y}px)`,
+            }}
+          >
+            {/* Base Layer: AI Enhanced / Committed / Preview Image */}
+            <div className="absolute inset-0">
+              <img
+                src={activeAsset.afterImg || activeAsset.beforeImg}
+                alt={activeAsset.name}
+                className="w-full h-full object-cover select-none"
+              />
+            </div>
 
-          {/* Watermark Overlay Layer */}
-          {renderWatermarkLayer()}
+            {/* Split / Before Layer */}
+            {(viewMode === 'split' || viewMode === 'before') && (
+              <div
+                className="absolute inset-0 overflow-hidden select-none"
+                style={{
+                  clipPath:
+                    viewMode === 'split'
+                      ? `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)`
+                      : 'none',
+                }}
+              >
+                <img
+                  src={activeAsset.beforeImg}
+                  alt="Original RAW"
+                  className="w-full h-full object-cover select-none filter brightness-95"
+                />
+                <div className="absolute top-4 left-4 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-md font-mono">
+                  ẢNH GỐC
+                </div>
+              </div>
+            )}
 
-          {/* Official Brand Logo Layer */}
-          {renderLogoLayer()}
+            {/* AI Side Tag in Split Mode */}
+            {viewMode === 'split' && (
+              <div className="absolute top-4 right-4 bg-[#B76E79]/85 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-md font-bold shadow-md">
+                MÂY ENHANCED
+              </div>
+            )}
 
-          {/* Protected Region Mask Overlay */}
-          {showProtectedOverlay && <ProtectedMaskOverlay asset={activeAsset} />}
+            {/* Watermark Overlay Layer */}
+            {renderWatermarkLayer()}
 
-          {/* Interactive Split Drag Handle */}
-          {viewMode === 'split' && (
-            <BeforeAfterSlider
-              position={sliderPosition}
-              isDark={isDark}
-              onMouseDown={() => setIsDragging(true)}
-              onTouchStart={() => setIsDragging(true)}
-            />
-          )}
+            {/* Split Drag Handle */}
+            {viewMode === 'split' && (
+              <BeforeAfterSlider
+                position={sliderPosition}
+                isDark={isDark}
+                onMouseDown={() => setIsDragging(true)}
+                onTouchStart={() => setIsDragging(true)}
+              />
+            )}
 
-          {/* 200% Inspection Loupe */}
-          {isLoupeActive && (
-            <InspectionLoupe
-              x={loupePos.x}
-              y={loupePos.y}
-              imgUrl={viewMode === 'before' ? activeAsset.beforeImg : activeAsset.afterImg}
-            />
-          )}
-        </div>
+            {/* 200% Inspection Loupe */}
+            {isLoupeActive && (
+              <InspectionLoupe
+                x={loupePos.x}
+                y={loupePos.y}
+                imgUrl={viewMode === 'before' ? activeAsset.beforeImg : activeAsset.afterImg}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

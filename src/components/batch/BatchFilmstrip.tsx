@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   CheckSquare, 
   Square, 
@@ -18,15 +18,35 @@ export const BatchFilmstrip: React.FC = () => {
     toggleSelectAllAssets,
     setMasterAsset,
     applyMasterToBatch,
+    addUploadedAssets,
     jobState,
     jobProgress,
     themeMode,
-    setStage
   } = useStudioStore();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isDark = themeMode === 'quiet-luxury';
   const selectedCount = assets.filter((a) => a.isSelected).length;
   const exceptionCount = assets.reduce((sum, a) => sum + (a.exceptions?.length || 0), 0);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newAssets = Array.from(files).map((file) => {
+      const url = URL.createObjectURL(file);
+      return {
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        category: 'Mỹ phẩm',
+        beforeImg: url,
+        afterImg: url,
+        width: 1200,
+        height: 1500,
+      };
+    });
+
+    addUploadedAssets(newAssets);
+  };
 
   const getStatusBadge = (status: string, exceptionLen: number) => {
     if (exceptionLen > 0) {
@@ -62,11 +82,22 @@ export const BatchFilmstrip: React.FC = () => {
   };
 
   return (
-    <div className={`h-28 border-t px-6 py-2.5 flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
-      isDark ? 'bg-[#181214]/95 border-[#302225]' : 'bg-white/95 border-[#EFE4DE]'
-    }`}>
+    <div
+      className={`h-28 border-t px-6 py-2.5 flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
+        isDark ? 'bg-[#181214]/95 border-[#302225]' : 'bg-white/95 border-[#EFE4DE]'
+      }`}
+    >
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        multiple
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Filmstrip Thumbnails List */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 max-w-[calc(100%-340px)] select-none">
+      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 max-w-[calc(100%-360px)] select-none">
         {assets.map((item) => {
           const isSelectedCurrent = item.id === selectedAssetId;
           const exceptionLen = item.exceptions?.length || 0;
@@ -78,15 +109,15 @@ export const BatchFilmstrip: React.FC = () => {
               className={`relative flex-shrink-0 w-22 h-22 rounded-2xl overflow-hidden border-2 cursor-pointer transition-all p-0.5 group ${
                 isSelectedCurrent
                   ? 'border-[#B76E79] shadow-md scale-102 ring-2 ring-[#B76E79]/20'
-                  : isDark 
-                  ? 'border-[#332427] opacity-75 hover:opacity-100 hover:border-neutral-500' 
+                  : isDark
+                  ? 'border-[#332427] opacity-75 hover:opacity-100 hover:border-neutral-500'
                   : 'border-[#E5D7D0] opacity-85 hover:opacity-100 hover:border-neutral-400'
               }`}
             >
-              <img 
-                src={item.afterImg || item.beforeImg} 
-                alt={item.name} 
-                className="w-full h-full object-cover rounded-xl select-none" 
+              <img
+                src={item.afterImg || item.beforeImg}
+                alt={item.name}
+                className="w-full h-full object-cover rounded-xl select-none"
               />
 
               {/* Multi-select Checkbox */}
@@ -98,7 +129,11 @@ export const BatchFilmstrip: React.FC = () => {
                 className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/60 text-white hover:bg-[#B76E79] transition-colors"
                 title={item.isSelected ? 'Bỏ chọn' : 'Chọn ảnh'}
               >
-                {item.isSelected ? <CheckSquare className="w-3.5 h-3.5 text-[#FDE2E4]" /> : <Square className="w-3.5 h-3.5 text-white/70" />}
+                {item.isSelected ? (
+                  <CheckSquare className="w-3.5 h-3.5 text-[#FDE2E4]" />
+                ) : (
+                  <Square className="w-3.5 h-3.5 text-white/70" />
+                )}
               </button>
 
               {/* Master Asset Star Badge */}
@@ -109,8 +144,8 @@ export const BatchFilmstrip: React.FC = () => {
                 }}
                 title={item.isMaster ? 'Ảnh Mẫu (Master Asset)' : 'Nhấn để đặt làm Ảnh Mẫu'}
                 className={`absolute top-1 right-1 z-10 p-0.5 rounded-full transition-all ${
-                  item.isMaster 
-                    ? 'bg-amber-500 text-white shadow-md scale-110' 
+                  item.isMaster
+                    ? 'bg-amber-500 text-white shadow-md scale-110'
                     : 'bg-black/40 text-white/50 hover:text-amber-300 hover:bg-black/70'
                 }`}
               >
@@ -132,10 +167,10 @@ export const BatchFilmstrip: React.FC = () => {
 
         {/* Quick Add Image Button */}
         <button
-          onClick={() => setStage('create')}
+          onClick={() => fileInputRef.current?.click()}
           className={`flex-shrink-0 w-22 h-22 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
-            isDark 
-              ? 'border-[#443034] text-[#D89CA5] hover:bg-[#251A1D]' 
+            isDark
+              ? 'border-[#443034] text-[#D89CA5] hover:bg-[#251A1D]'
               : 'border-[#E8CAD1] text-[#9E5862] hover:bg-[#FFF5F6]'
           }`}
           title="Tải thêm ảnh vào studio"
@@ -149,12 +184,9 @@ export const BatchFilmstrip: React.FC = () => {
       <div className="pl-5 border-l border-[#EFE4DE] flex flex-col items-end gap-1.5 shrink-0">
         <div className="flex items-center gap-2">
           {exceptionCount > 0 && (
-            <span 
-              onClick={() => setStage('batch')}
-              className="text-[10px] text-amber-700 bg-amber-100 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer hover:underline"
-            >
+            <span className="text-[10px] text-amber-700 bg-amber-100 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              {exceptionCount} lưu ý cần xem
+              <span>{exceptionCount} lưu ý</span>
             </span>
           )}
           <button
@@ -171,10 +203,14 @@ export const BatchFilmstrip: React.FC = () => {
         <button
           onClick={applyMasterToBatch}
           disabled={jobState === 'processing'}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#B76E79] to-[#9E5862] text-white text-xs font-bold shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#B76E79] to-[#8C4752] text-white text-xs font-bold shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${jobState === 'processing' ? 'animate-spin' : ''}`} />
-          <span>{jobState === 'processing' ? `Đang xử lý ${jobProgress}%...` : 'Apply Master to Batch'}</span>
+          <span>
+            {jobState === 'processing'
+              ? `Đang đồng bộ ${jobProgress}%...`
+              : `Đồng bộ Master cho ${selectedCount} ảnh`}
+          </span>
         </button>
       </div>
     </div>
