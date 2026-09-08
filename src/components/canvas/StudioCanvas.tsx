@@ -158,6 +158,19 @@ export const StudioCanvas: React.FC = () => {
     );
   };
 
+  const getFilterStyle = () => {
+    const recipe = activeAsset?.recipe;
+    if (!recipe) return {};
+    const brightness = 1 + (recipe.exposure || 0) / 100;
+    const contrast = 1 + (recipe.contrast || 0) / 100;
+    const highlights = 1 + (recipe.highlights || 0) / 200;
+    return {
+      filter: `brightness(${brightness}) contrast(${contrast}) saturate(${highlights})`,
+      transform: `rotate(${recipe.cropRotation || 0}deg)`,
+      transition: 'filter 0.15s ease-out, transform 0.2s ease-out',
+    };
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative select-none h-full">
       {/* 1. TOP VIEWPORT CONTROLS BAR */}
@@ -345,6 +358,7 @@ export const StudioCanvas: React.FC = () => {
                   src={activeAsset.afterImg || activeAsset.beforeImg}
                   alt="AI Enhanced"
                   className="w-full h-full object-cover select-none"
+                  style={getFilterStyle()}
                 />
                 {renderWatermarkLayer()}
               </div>
@@ -367,6 +381,7 @@ export const StudioCanvas: React.FC = () => {
                 src={activeAsset.afterImg || activeAsset.beforeImg}
                 alt={activeAsset.name}
                 className="w-full h-full object-cover select-none"
+                style={getFilterStyle()}
               />
             </div>
 
