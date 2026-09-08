@@ -8,16 +8,19 @@ import {
   ShieldCheck,
   Star,
   CheckCircle2,
-  Maximize2
+  Maximize2,
+  Trash2
 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { BrandLogo } from '../brand/BrandLogo';
+import { createManagedObjectURL, getOptimizedThumbnail } from '../../utils/imageOptimizer';
 
 export const HomeView: React.FC = () => {
   const {
     assets,
     selectedAssetId,
     selectAsset,
+    deleteAsset,
     setView,
     addUploadedAssets,
     openExport,
@@ -37,7 +40,7 @@ export const HomeView: React.FC = () => {
     if (!files || files.length === 0) return;
 
     const newAssets = Array.from(files).map((file) => {
-      const url = URL.createObjectURL(file);
+      const url = createManagedObjectURL(file);
       return {
         name: file.name.replace(/\.[^/.]+$/, ''),
         category: 'Mỹ phẩm',
@@ -61,7 +64,7 @@ export const HomeView: React.FC = () => {
     if (!files || files.length === 0) return;
 
     const newAssets = Array.from(files).map((file) => {
-      const url = URL.createObjectURL(file);
+      const url = createManagedObjectURL(file);
       return {
         name: file.name.replace(/\.[^/.]+$/, ''),
         category: 'Mỹ phẩm',
@@ -177,8 +180,10 @@ export const HomeView: React.FC = () => {
             }}
           >
             <img
-              src={masterAsset.afterImg || masterAsset.beforeImg}
+              src={getOptimizedThumbnail(masterAsset.afterImg || masterAsset.beforeImg, 400)}
               alt={masterAsset.name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -312,8 +317,10 @@ export const HomeView: React.FC = () => {
                 className="aspect-[4/5] relative overflow-hidden cursor-pointer bg-neutral-100 dark:bg-neutral-900"
               >
                 <img
-                  src={item.afterImg || item.beforeImg}
+                  src={getOptimizedThumbnail(item.afterImg || item.beforeImg, 400)}
                   alt={item.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                 />
 
@@ -373,6 +380,17 @@ export const HomeView: React.FC = () => {
                     title="Xuất ảnh này"
                   >
                     <Download className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteAsset(item.id);
+                    }}
+                    className="p-2.5 rounded-xl border border-inherit hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-500 transition-all text-neutral-400 cursor-pointer"
+                    title="Xóa ảnh này"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

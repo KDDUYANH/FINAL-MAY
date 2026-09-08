@@ -6,14 +6,15 @@ interface InspectionLoupeProps {
   imgUrl: string;
 }
 
-export const InspectionLoupe: React.FC<InspectionLoupeProps> = ({ x, y, imgUrl }) => {
+export const InspectionLoupe: React.FC<InspectionLoupeProps> = React.memo(({ x, y, imgUrl }) => {
   return (
     <div
       className="absolute z-40 w-44 h-44 rounded-full border-2 border-white/90 shadow-[0_12px_36px_rgba(0,0,0,0.45)] overflow-hidden pointer-events-none bg-white ring-2 ring-black/20"
       style={{
         top: `${y}%`,
         left: `${x}%`,
-        transform: 'translate(-50%, -50%)'
+        transform: 'translate3d(-50%, -50%, 0)',
+        willChange: 'top, left',
       }}
     >
       {/* 200% Zoomed Image layer */}
@@ -23,7 +24,7 @@ export const InspectionLoupe: React.FC<InspectionLoupeProps> = ({ x, y, imgUrl }
           backgroundImage: `url(${imgUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: `${x}% ${y}%`,
-          imageRendering: 'crisp-edges'
+          imageRendering: 'crisp-edges',
         }}
       />
 
@@ -39,4 +40,4 @@ export const InspectionLoupe: React.FC<InspectionLoupeProps> = ({ x, y, imgUrl }
       </div>
     </div>
   );
-};
+});

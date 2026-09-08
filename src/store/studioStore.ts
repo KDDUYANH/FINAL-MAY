@@ -6,6 +6,7 @@ import {
 import { BRAND_CONFIG } from '../config/brand.config';
 import { RecipeEngine } from '../services/recipeEngine';
 import { AIProviderService } from '../services/aiProvider';
+import { revokeAssetObjectURLs } from '../utils/imageOptimizer';
 
 // ─── Defaults ───────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ interface StudioState {
   setView: (view: AppView) => void;
   setActiveEditTool: (tool: EditTool) => void;
   selectAsset: (id: string) => void;
+  deleteAsset: (id: string) => void;
   addUploadedAssets: (newAssets: Partial<Asset>[]) => void;
   toggleAssetSelected: (id: string) => void;
   toggleSelectAllAssets: () => void;
@@ -185,6 +187,19 @@ export const useStudioStore = create<StudioState>((set, get) => ({
 
   // ─── Assets ─────────────────────────────────────────────────
   selectAsset: (id) => set({ selectedAssetId: id }),
+
+  deleteAsset: (id) => {
+    const target = get().assets.find((a) => a.id === id);
+    if (target) {
+      revokeAssetObjectURLs(target);
+    }
+    const remaining = get().assets.filter((a) => a.id !== id);
+    set((s) => ({
+      assets: remaining,
+      selectedAssetId: s.selectedAssetId === id ? (remaining[0]?.id || '') : s.selectedAssetId,
+    }));
+    get().showToast('Đã xóa ảnh khỏi danh sách');
+  },
 
   addUploadedAssets: (newAssets) => {
     const created: Asset[] = newAssets.map((item, idx) => ({

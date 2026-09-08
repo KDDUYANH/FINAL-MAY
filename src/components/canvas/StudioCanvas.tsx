@@ -64,32 +64,39 @@ export const StudioCanvas: React.FC = () => {
     }
   };
 
+  const rafIdRef = useRef<number | null>(null);
+
   const handlePointerMove = useCallback(
     (clientX: number, clientY: number) => {
       if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
 
-      if (isDragging) {
-        const x = clientX - rect.left;
-        const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-        setSliderPosition(pct);
-      }
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
 
-      if (isLoupeActive) {
-        const x = ((clientX - rect.left) / rect.width) * 100;
-        const y = ((clientY - rect.top) / rect.height) * 100;
-        setLoupePos({
-          x: Math.max(0, Math.min(100, x)),
-          y: Math.max(0, Math.min(100, y)),
-        });
-      }
+        if (isDragging) {
+          const x = clientX - rect.left;
+          const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+          setSliderPosition(pct);
+        }
 
-      if (isPanning) {
-        const dx = clientX - panStartRef.current.x;
-        const dy = clientY - panStartRef.current.y;
-        setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
-        panStartRef.current = { x: clientX, y: clientY };
-      }
+        if (isLoupeActive) {
+          const x = ((clientX - rect.left) / rect.width) * 100;
+          const y = ((clientY - rect.top) / rect.height) * 100;
+          setLoupePos({
+            x: Math.max(0, Math.min(100, x)),
+            y: Math.max(0, Math.min(100, y)),
+          });
+        }
+
+        if (isPanning) {
+          const dx = clientX - panStartRef.current.x;
+          const dy = clientY - panStartRef.current.y;
+          setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+          panStartRef.current = { x: clientX, y: clientY };
+        }
+      });
     },
     [isDragging, isLoupeActive, isPanning, setSliderPosition, setLoupePos]
   );
@@ -113,6 +120,7 @@ export const StudioCanvas: React.FC = () => {
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('touchend', onTouchEnd);
     return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('touchend', onTouchEnd);
     };
@@ -322,7 +330,7 @@ export const StudioCanvas: React.FC = () => {
 
       {/* 3. MAIN CANVAS VIEWPORT */}
       <div
-        className="flex-1 flex items-center justify-center p-6 overflow-hidden relative cursor-crosshair"
+        className="flex-1 flex items-center justify-center p-6 overflow-hidden relative cursor-crosshair [contain:layout_paint]"
         onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
         onTouchMove={(e) => {
           if (e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
@@ -368,11 +376,12 @@ export const StudioCanvas: React.FC = () => {
           /* Single / Split Mode Viewport */
           <div
             ref={containerRef}
-            className={`relative w-full max-w-2xl ${getAspectRatioClass()} rounded-3xl overflow-hidden shadow-2xl border-4 transition-transform duration-100 ${
+            className={`relative w-full max-w-2xl ${getAspectRatioClass()} rounded-3xl overflow-hidden shadow-2xl border-4 transition-transform duration-75 ${
               isDark ? 'border-[#38282C] bg-[#1A1315]' : 'border-white bg-white'
             }`}
             style={{
-              transform: `scale(${zoomLevel / 100}) translate(${pan.x}px, ${pan.y}px)`,
+              transform: `scale(${zoomLevel / 100}) translate3d(${pan.x}px, ${pan.y}px, 0)`,
+              willChange: isPanning || isDragging ? 'transform' : 'auto',
             }}
           >
             {/* Base Layer: AI Enhanced / Committed / Preview Image */}

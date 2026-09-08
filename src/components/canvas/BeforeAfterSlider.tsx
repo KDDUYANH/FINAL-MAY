@@ -8,7 +8,7 @@ interface BeforeAfterSliderProps {
   onTouchStart: (e: React.TouchEvent) => void;
 }
 
-export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
+export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = React.memo(({
   position,
   isDark,
   onMouseDown,
@@ -17,7 +17,11 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   return (
     <div
       className="absolute top-0 bottom-0 z-30 cursor-ew-resize flex items-center justify-center select-none"
-      style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
+      style={{
+        left: `${position}%`,
+        transform: 'translate3d(-50%, 0, 0)',
+        willChange: 'left',
+      }}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
     >
@@ -46,4 +50,4 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
       </div>
     </div>
   );
-};
+});

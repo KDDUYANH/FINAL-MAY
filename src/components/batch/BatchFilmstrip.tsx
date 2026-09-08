@@ -5,15 +5,18 @@ import {
   Star, 
   AlertTriangle, 
   RefreshCw, 
-  Plus 
+  Plus,
+  Trash2 
 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
+import { getOptimizedThumbnail, createManagedObjectURL } from '../../utils/imageOptimizer';
 
 export const BatchFilmstrip: React.FC = () => {
   const {
     assets,
     selectedAssetId,
     selectAsset,
+    deleteAsset,
     toggleAssetSelected,
     toggleSelectAllAssets,
     setMasterAsset,
@@ -34,7 +37,7 @@ export const BatchFilmstrip: React.FC = () => {
     if (!files || files.length === 0) return;
 
     const newAssets = Array.from(files).map((file) => {
-      const url = URL.createObjectURL(file);
+      const url = createManagedObjectURL(file);
       return {
         name: file.name.replace(/\.[^/.]+$/, ''),
         category: 'Mỹ phẩm',
@@ -115,9 +118,11 @@ export const BatchFilmstrip: React.FC = () => {
               }`}
             >
               <img
-                src={item.afterImg || item.beforeImg}
+                src={getOptimizedThumbnail(item.afterImg || item.beforeImg, 200)}
                 alt={item.name}
                 className="w-full h-full object-cover rounded-xl select-none"
+                loading="lazy"
+                decoding="async"
               />
 
               {/* Multi-select Checkbox */}
@@ -160,6 +165,20 @@ export const BatchFilmstrip: React.FC = () => {
                 <div className="absolute bottom-1 right-1 bg-purple-600 text-white text-[7.5px] px-1 rounded font-bold">
                   CUSTOM
                 </div>
+              )}
+
+              {/* Quick Delete Hover Button */}
+              {assets.length > 1 && !item.isMaster && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteAsset(item.id);
+                  }}
+                  className="absolute bottom-1 left-1 z-10 p-1 rounded bg-black/70 text-white/75 hover:text-rose-400 hover:bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Xóa ảnh này khỏi danh sách"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
               )}
             </div>
           );
