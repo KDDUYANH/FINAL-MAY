@@ -5,11 +5,10 @@ import {
   ArrowRight, 
   Download, 
   Wand2, 
-  ShieldCheck,
-  Star,
-  CheckCircle2,
+  Star, 
   Maximize2,
-  Trash2
+  Trash2,
+  Layers
 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { BrandLogo } from '../brand/BrandLogo';
@@ -23,6 +22,7 @@ export const HomeView: React.FC = () => {
     deleteAsset,
     setView,
     addUploadedAssets,
+    previewRecommendation,
     openExport,
     themeMode,
   } = useStudioStore();
@@ -85,60 +85,25 @@ export const HomeView: React.FC = () => {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10 max-w-7xl mx-auto w-full space-y-12 animate-fadeIn select-none">
-      {/* 1. TOP HERO: MODERN MINIMAL LUXURY BANNER */}
-      <section className="relative overflow-hidden rounded-3xl p-8 md:p-12 border transition-all duration-300 shadow-xl bg-gradient-to-b from-black/[0.02] to-transparent dark:from-white/[0.02] border-neutral-200/80 dark:border-neutral-800">
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold backdrop-blur-md bg-white/60 dark:bg-[#1E1618]/60 border-[#B76E79]/30 text-[#B76E79]">
-            <BrandLogo variant="mark" className="h-4 w-auto inline-block" />
-            <span>MÂY Studio v4.0 • Quiet Luxury Commercial AI</span>
-          </div>
-
-          <h1 className="text-3xl md:text-5xl font-serif font-bold tracking-tight text-neutral-900 dark:text-[#FAF5F2] leading-tight">
-            Nâng Tầm Hình Ảnh Mỹ Phẩm Cao Cấp
-          </h1>
-
-          <p className="text-xs md:text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed font-normal">
-            Không cần kỹ năng photoshop phức tạp. AI tự động định vị sản phẩm, tái tạo ánh sáng studio dịu mắt, và bảo toàn 100% nhãn in thành phần bao bì.
+    <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10 max-w-6xl mx-auto w-full space-y-12 animate-fadeIn select-none">
+      {/* 1. BRAND HERO & CREATE / UPLOAD (Streamlined Deluxe) */}
+      <section className="space-y-6 text-center max-w-2xl mx-auto pt-2">
+        <div className="flex flex-col items-center gap-3">
+          <BrandLogo variant="horizontal" className="h-10 w-auto" />
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 font-sans tracking-wide">
+            AI Product Image Studio • Quiet Luxury Standards
           </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#B76E79] via-[#A25A64] to-[#8C4752] text-white text-xs md:text-sm font-bold shadow-lg hover:shadow-xl hover:opacity-95 active:scale-95 transition-all cursor-pointer"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Tải Ảnh Sản Phẩm</span>
-            </button>
-
-            <button
-              onClick={() => {
-                selectAsset('asset-01');
-                setView('studio');
-              }}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl border text-xs md:text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200"
-            >
-              <Wand2 className="w-4 h-4 text-[#B76E79]" />
-              <span>Thử nghiệm với Serum mẫu</span>
-            </button>
-          </div>
         </div>
 
-        {/* Ambient Luxury Background Elements */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-gradient-to-br from-[#B76E79]/15 to-transparent blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-gradient-to-tr from-[#D4AF37]/10 to-transparent blur-3xl pointer-events-none" />
-      </section>
-
-      {/* 2. DRAG & DROP UPLOAD ZONE */}
-      <section>
+        {/* Upload Dropzone */}
         <div
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
           className={`p-8 md:p-10 rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center gap-3 group relative overflow-hidden ${
             isDark
-              ? 'border-[#443034] bg-[#181214]/60 hover:bg-[#22181B] hover:border-[#B76E79]'
-              : 'border-[#E5D7D0] bg-white/60 hover:bg-[#FFF8F6] hover:border-[#B76E79]'
+              ? 'border-[#3D292D] bg-[#1A1315]/80 hover:bg-[#23181B] hover:border-[#B76E79]'
+              : 'border-[#E7D6CE] bg-white/70 hover:bg-[#FFF8F6] hover:border-[#B76E79]'
           }`}
         >
           <input
@@ -149,21 +114,44 @@ export const HomeView: React.FC = () => {
             accept="image/*"
             className="hidden"
           />
-          <div className="w-16 h-16 rounded-2xl bg-[#B76E79]/15 text-[#B76E79] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#B76E79] group-hover:text-white transition-all duration-300 shadow-sm">
-            <Upload className="w-7 h-7" />
+          <div className="w-14 h-14 rounded-2xl bg-[#B76E79]/15 text-[#B76E79] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#B76E79] group-hover:text-white transition-all duration-300 shadow-sm">
+            <Upload className="w-6 h-6" />
           </div>
-          <div className="text-center">
+          <div>
             <div className="text-sm font-bold font-serif text-neutral-900 dark:text-neutral-100">
-              Kéo thả hình ảnh vào đây hoặc bấm để tải lên
+              Kéo thả ảnh sản phẩm vào đây hoặc nhấp để tải lên
             </div>
-            <div className="text-xs opacity-60 mt-1">
+            <div className="text-[11px] opacity-60 mt-1">
               Hỗ trợ PNG, JPG, WebP độ phân giải cao lên đến 4K
             </div>
+          </div>
+
+          <div className="pt-2 flex items-center gap-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#B76E79] to-[#8C4752] text-white text-xs font-bold shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+            >
+              Tải ảnh ngay
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                selectAsset('asset-01');
+                setView('studio');
+              }}
+              className="px-4 py-2 rounded-xl border text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5"
+            >
+              <Wand2 className="w-3.5 h-3.5 text-[#B76E79]" />
+              <span>Thử Serum mẫu</span>
+            </button>
           </div>
         </div>
       </section>
 
-      {/* 3. SMART NEXT ACTION: AI RECOMMENDATION HERO */}
+      {/* 2. BEST NEXT ACTION: SMART RECOMMENDATION SPOTLIGHT */}
       {masterAsset && activeRec && (
         <section
           className={`p-6 md:p-8 rounded-3xl border transition-all duration-300 shadow-xl flex flex-col md:flex-row items-center gap-6 md:gap-8 ${
@@ -172,8 +160,9 @@ export const HomeView: React.FC = () => {
               : 'bg-white border-[#ECD8D2] text-[#2D1D1F]'
           }`}
         >
-          {/* Visual Thumbnail with Master Badge */}
-          <div className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden shadow-lg shrink-0 border-2 border-[#B76E79]/40 relative group cursor-pointer"
+          {/* Visual Thumbnail */}
+          <div 
+            className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden shadow-lg shrink-0 border-2 border-[#B76E79]/40 relative group cursor-pointer"
             onClick={() => {
               selectAsset(masterAsset.id);
               setView('studio');
@@ -199,9 +188,9 @@ export const HomeView: React.FC = () => {
 
           {/* Action Information & Intelligence */}
           <div className="flex-1 text-center md:text-left space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#B76E79]">
-              <Sparkles className="w-4 h-4" />
-              <span>Gợi ý bước tiếp theo của AI (Smart Recommendation)</span>
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#B76E79]">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>BEST NEXT ACTION</span>
             </div>
 
             <h3 className="text-lg md:text-xl font-bold font-serif text-neutral-900 dark:text-[#FAF5F2]">
@@ -212,28 +201,15 @@ export const HomeView: React.FC = () => {
               {activeRec.reason}
             </p>
 
-            {/* Quality & Integrity Badge */}
-            <div className="pt-1 flex flex-wrap items-center justify-center md:justify-start gap-2">
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Nhãn in: 100% Nguyên bản</span>
-              </span>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
-                <span>Độ tin cậy AI: 99%</span>
-              </span>
-            </div>
-
             {/* Action Buttons */}
             <div className="pt-3 flex flex-wrap items-center justify-center md:justify-start gap-3">
               <button
                 onClick={() => {
-                  selectAsset(masterAsset.id);
-                  setView('studio');
+                  previewRecommendation(masterAsset.id);
                 }}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#B76E79] to-[#8C4752] text-white text-xs font-bold shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
               >
-                <span>Xem trước & Hoàn thiện</span>
+                <span>Xem trước (Preview)</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
@@ -252,7 +228,7 @@ export const HomeView: React.FC = () => {
         </section>
       )}
 
-      {/* 4. RECENT WORK GALLERY WITH CATEGORY FILTERS */}
+      {/* 3. RECENT WORK GALLERY WITH CATEGORY FILTERS */}
       <section className="space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -260,7 +236,7 @@ export const HomeView: React.FC = () => {
               Tác Phẩm Gần Đây (Recent Work)
             </h2>
             <p className="text-xs opacity-70">
-              Quản lý và tiếp tục tinh chỉnh các bộ sản phẩm đang thực hiện
+              Tiếp tục chỉnh sửa hoặc tải về ảnh đã hoàn thiện
             </p>
           </div>
 
@@ -304,9 +280,9 @@ export const HomeView: React.FC = () => {
           {filteredAssets.map((item) => (
             <div
               key={item.id}
-              className={`rounded-3xl border overflow-hidden transition-all duration-300 group flex flex-col ${
-                isDark ? 'bg-[#1D1618] border-[#36262A]' : 'bg-white border-[#EADBD3]'
-              } hover:shadow-2xl hover:border-[#B76E79]`}
+              className={`rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl flex flex-col group ${
+                isDark ? 'bg-[#1A1315] border-[#38262A]' : 'bg-white border-[#EADBD3]'
+              }`}
             >
               {/* Card Image Thumbnail */}
               <div
@@ -341,7 +317,7 @@ export const HomeView: React.FC = () => {
                 <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="px-3.5 py-1.5 rounded-xl bg-white/90 text-neutral-900 text-xs font-bold shadow backdrop-blur-md flex items-center gap-1.5">
                     <Wand2 className="w-3.5 h-3.5 text-[#B76E79]" />
-                    <span>Chỉnh sửa trong Studio</span>
+                    <span>Mở trong Studio</span>
                   </span>
                 </div>
               </div>
@@ -367,7 +343,7 @@ export const HomeView: React.FC = () => {
                     }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#B76E79]/10 text-[#B76E79] text-xs font-bold hover:bg-[#B76E79] hover:text-white transition-all cursor-pointer"
                   >
-                    <Wand2 className="w-3.5 h-3.5" />
+                    <Layers className="w-3.5 h-3.5" />
                     <span>Mở Studio</span>
                   </button>
 
@@ -396,39 +372,6 @@ export const HomeView: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* 5. BRAND VALUE PILLARS (Deluxe Soft Luxury Assurance) */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-inherit">
-        <div className="p-5 rounded-2xl bg-black/[0.015] dark:bg-white/[0.015] border border-inherit space-y-1.5">
-          <div className="flex items-center gap-2 text-[#B76E79] font-bold text-xs font-serif">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Bảo Toàn Nhãn Hoạt Chất 100%</span>
-          </div>
-          <p className="text-[11px] opacity-70 leading-relaxed">
-            Công nghệ segmentation tự động nhận diện và khóa bất biến phần chữ in thành phần & logo in trên bao bì chai.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-black/[0.015] dark:bg-white/[0.015] border border-inherit space-y-1.5">
-          <div className="flex items-center gap-2 text-[#B76E79] font-bold text-xs font-serif">
-            <Sparkles className="w-4 h-4" />
-            <span>Ánh Sáng Studio Mềm Mại</span>
-          </div>
-          <p className="text-[11px] opacity-70 leading-relaxed">
-            Tái tạo độ tương phản quang học, phản xạ bóng đổ tự nhiên trên nền lụa satin và đá marble thanh lịch.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-black/[0.015] dark:bg-white/[0.015] border border-inherit space-y-1.5">
-          <div className="flex items-center gap-2 text-[#B76E79] font-bold text-xs font-serif">
-            <Download className="w-4 h-4" />
-            <span>Xuất Ảnh 4K Sẵn Sàng Bán Hàng</span>
-          </div>
-          <p className="text-[11px] opacity-70 leading-relaxed">
-            Hỗ trợ đầy đủ tỷ lệ chuẩn cho Shopee, Instagram Post, Story/Reels và in ấn ấn phẩm POSM thương mại.
-          </p>
         </div>
       </section>
     </div>

@@ -90,7 +90,7 @@ export const SmartRecommendationCard: React.FC<SmartRecommendationCardProps> = (
           ) : (
             <>
               <Wand2 className={`w-3.5 h-3.5 ${jobState === 'processing' ? 'animate-spin' : ''}`} />
-              <span>{jobState === 'processing' ? 'Đang nâng cấp...' : 'Áp dụng đề xuất'}</span>
+              <span>{jobState === 'processing' ? 'Đang tạo xem trước...' : 'Xem trước đề xuất'}</span>
             </>
           )}
         </button>

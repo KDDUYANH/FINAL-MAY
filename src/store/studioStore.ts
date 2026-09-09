@@ -150,6 +150,7 @@ interface StudioState {
   cancelPreview: () => void;
   resetToOriginal: () => void;
   runAutoAnalysis: (assetId?: string) => Promise<void>;
+  previewRecommendation: (assetId?: string) => Promise<void>;
   applyRecommendation: (assetId?: string) => Promise<void>;
   applyMasterToBatch: () => Promise<void>;
   openExport: () => void;
@@ -278,38 +279,60 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     ),
   })),
 
-  // ─── Preview Pipeline ──────────────────────────────────────
+  // ─── Preview Pipeline (previewImage ≠ committedImage) ───────
   applyPreview: () => {
     const { assets, selectedAssetId, historyPast } = get();
+    const target = assets.find((a) => a.id === selectedAssetId);
+    if (!target) return;
+
     set({
       historyPast: [...historyPast.slice(-10), assets],
       historyFuture: [],
       isPreviewDirty: false,
       assets: assets.map((a) =>
         a.id === selectedAssetId
-          ? { ...a, status: a.isMaster ? 'Master' : 'Ready' }
+          ? {
+              ...a,
+              afterImg: a.previewImg || a.afterImg,
+              previewImg: undefined,
+              status: a.isMaster ? ('Master' as const) : ('Ready' as const),
+            }
           : a
-      )
+      ),
     });
-    get().showToast('✓ Đã áp dụng thay đổi');
+    get().showToast('✓ Đã áp dụng thay đổi vào ảnh chính');
   },
 
   cancelPreview: () => {
     const { historyPast, selectedAssetId, assets } = get();
-    // If there's a previous committed state in history, restore the recipe from it
+    // If there's a previous committed state in history, restore the recipe and state from it
     if (historyPast.length > 0) {
       const lastCommitted = historyPast[historyPast.length - 1].find((a) => a.id === selectedAssetId);
       if (lastCommitted) {
         set({
-          assets: assets.map((a) => a.id === selectedAssetId ? { ...a, recipe: { ...lastCommitted.recipe }, brand: { ...lastCommitted.brand } } : a),
-          isPreviewDirty: false
+          assets: assets.map((a) =>
+            a.id === selectedAssetId
+              ? {
+                  ...a,
+                  previewImg: undefined,
+                  recipe: { ...lastCommitted.recipe },
+                  brand: { ...lastCommitted.brand },
+                }
+              : a
+          ),
+          isPreviewDirty: false,
         });
-        get().showToast('✕ Đã hủy xem trước');
+        get().showToast('✕ Đã hủy bản xem trước, giữ nguyên ảnh');
         return;
       }
     }
-    set({ isPreviewDirty: false });
-    get().showToast('✕ Đã hủy xem trước');
+    set({
+      assets: assets.map((a) =>
+        a.id === selectedAssetId ? { ...a, previewImg: undefined } : a
+      ),
+      isPreviewDirty: false,
+    });
+    get().showToast('✕ Đã hủy bản xem trước, giữ nguyên ảnh');
   },
 
   resetToOriginal: () => {
@@ -324,13 +347,14 @@ export const useStudioStore = create<StudioState>((set, get) => ({
         a.id === selectedAssetId
           ? {
               ...a,
+              previewImg: undefined,
               afterImg: a.beforeImg,
               recipe: { ...DEFAULT_EDIT_RECIPE },
               brand: { ...DEFAULT_BRAND_RECIPE },
-              status: 'Raw'
+              status: 'Raw',
             }
           : a
-      )
+      ),
     });
     get().showToast('↺ Đã khôi phục ảnh gốc');
   },
@@ -351,7 +375,9 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       const recommendation = generateRecommendation(analysis);
 
       set((s) => ({
-        jobState: 'completed', jobProgress: 100, jobMessage: 'Phân tích hoàn tất',
+        jobState: 'completed',
+        jobProgress: 100,
+        jobMessage: 'Phân tích hoàn tất',
         assets: s.assets.map((a) =>
           a.id === id ? { ...a, analysis, recommendation, recipe: { ...a.recipe, aspectRatio: analysis.recommendedCrop } } : a
         ),
@@ -362,12 +388,18 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     }
   },
 
-  applyRecommendation: async (assetId) => {
+  previewRecommendation: async (assetId) => {
     const id = assetId || get().selectedAssetId;
     const target = get().assets.find((a) => a.id === id);
     if (!target) return;
 
-    set({ jobState: 'processing', jobProgress: 10, jobMessage: 'Đang nâng cấp ảnh...' });
+    set({
+      selectedAssetId: id,
+      currentView: 'studio',
+      jobState: 'processing',
+      jobProgress: 15,
+      jobMessage: 'Đang chuẩn bị bản xem trước AI...',
+    });
     const provider = AIProviderService.getInstance().getProvider();
 
     try {
@@ -377,24 +409,33 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       const proRecipe = RecipeEngine.createProfessionalRecipe(target.analysis);
 
       set((s) => ({
-        jobState: 'completed', jobProgress: 100, jobMessage: 'Nâng cấp hoàn tất!',
-        historyPast: [...s.historyPast.slice(-10), s.assets],
-        historyFuture: [],
+        jobState: 'completed',
+        jobProgress: 100,
+        jobMessage: 'Bản xem trước hoàn tất!',
+        isPreviewDirty: true,
+        viewMode: 'split',
         assets: s.assets.map((a) =>
-          a.id === id ? {
-            ...a, afterImg: result.enhancedUrl,
-            protectedRegions: result.protectedRegions,
-            integrityScore: result.integrityScore,
-            recipe: proRecipe,
-            status: a.isMaster ? 'Master' as const : 'Ready' as const,
-          } : a
+          a.id === id
+            ? {
+                ...a,
+                previewImg: result.enhancedUrl, // Non-destructive preview layer
+                protectedRegions: result.protectedRegions,
+                integrityScore: result.integrityScore,
+                recipe: proRecipe,
+              }
+            : a
         ),
       }));
-      get().showToast(`✨ "${target.name}" đã nâng cấp!`);
+      get().showToast(`✨ Đang xem trước đề xuất cho "${target.name}". Nhấn "Áp dụng" nếu ưng ý!`);
     } catch (err: any) {
       set({ jobState: 'failed', jobMessage: err.message || 'Lỗi xử lý.' });
-      get().showToast(`Lỗi: ${err.message || 'Không thể nâng cấp.'}`);
+      get().showToast(`Lỗi: ${err.message || 'Không thể tạo xem trước.'}`);
     }
+  },
+
+  applyRecommendation: async (assetId) => {
+    // Calling recommendation routes through the safe non-destructive preview pipeline
+    await get().previewRecommendation(assetId);
   },
 
   applyMasterToBatch: async () => {

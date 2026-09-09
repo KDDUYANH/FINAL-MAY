@@ -1,14 +1,14 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { 
   Eye, 
-  ZoomIn, 
-  ZoomOut, 
   RotateCcw, 
   Columns, 
   Sparkles, 
   Check, 
   X, 
-  SplitSquareVertical 
+  SplitSquareVertical,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
@@ -33,6 +33,10 @@ export const StudioCanvas: React.FC = () => {
     applyPreview,
     cancelPreview,
     resetToOriginal,
+    undo,
+    redo,
+    historyPast,
+    historyFuture,
     themeMode,
   } = useStudioStore();
 
@@ -179,6 +183,12 @@ export const StudioCanvas: React.FC = () => {
     };
   };
 
+  // Preview Architecture: previewImage ≠ committedImage
+  const displayedAfterImg = activeAsset.previewImg || activeAsset.afterImg || activeAsset.beforeImg;
+  const displayedBeforeImg = activeAsset.previewImg
+    ? (activeAsset.afterImg || activeAsset.beforeImg)
+    : activeAsset.beforeImg;
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative select-none h-full">
       {/* 1. TOP VIEWPORT CONTROLS BAR */}
@@ -214,7 +224,7 @@ export const StudioCanvas: React.FC = () => {
               }`}
             >
               <SplitSquareVertical className="w-3.5 h-3.5" />
-              <span>Song song (Side-by-side)</span>
+              <span>Song song</span>
             </button>
             <button
               onClick={() => setViewMode('after')}
@@ -225,7 +235,7 @@ export const StudioCanvas: React.FC = () => {
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Kết quả AI</span>
+              <span>Kết quả</span>
             </button>
             <button
               onClick={() => setViewMode('before')}
@@ -240,130 +250,65 @@ export const StudioCanvas: React.FC = () => {
           </div>
         </div>
 
-        {/* Zoom & Inspection Controls */}
-        <div className="flex items-center gap-3">
-          {/* 200% Loupe toggle */}
-          <button
-            onClick={() => setLoupeActive(!isLoupeActive)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-              isLoupeActive
-                ? 'bg-[#B76E79] text-white border-[#8C4752] shadow-xs'
-                : isDark
-                ? 'bg-[#251A1D] border-[#442D32] text-neutral-300'
-                : 'bg-white border-[#E5D6CF] text-neutral-700'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Kính lúp 200%</span>
-          </button>
-
-          {/* Quick Zoom Presets: Fit / 100% / 200% */}
-          <div
-            className={`flex items-center gap-1 text-xs border rounded-xl px-2 py-0.5 ${
-              isDark ? 'bg-[#251A1D] border-[#442D32]' : 'bg-white border-[#E5D6CF]'
-            }`}
-          >
-            <button
-              onClick={() => {
-                setZoomLevel(100);
-                setPan({ x: 0, y: 0 });
-              }}
-              className="p-1 hover:text-[#B76E79] text-[10px] font-bold"
-              title="Vừa màn hình (Fit)"
-            >
-              Fit
-            </button>
-            <button
-              onClick={() => setZoomLevel(Math.max(50, zoomLevel - 20))}
-              className="p-1 hover:text-[#B76E79]"
-              title="Thu nhỏ"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="w-10 text-center font-mono font-medium">{zoomLevel}%</span>
-            <button
-              onClick={() => setZoomLevel(Math.min(200, zoomLevel + 20))}
-              className="p-1 hover:text-[#B76E79]"
-              title="Phóng to"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Reset Image */}
-          <button
-            onClick={resetToOriginal}
-            className={`p-2 rounded-xl border text-neutral-400 hover:text-red-500 transition-colors cursor-pointer ${
-              isDark ? 'border-[#442D32] hover:bg-[#251A1D]' : 'border-[#E5D6CF] hover:bg-[#FAF3EF]'
-            }`}
-            title="Khôi phục trạng thái gốc ban đầu"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+        {/* Top Status & Integrity Hint */}
+        <div className="flex items-center gap-2 text-xs opacity-75">
+          <span className="font-serif font-bold text-neutral-800 dark:text-neutral-200">
+            {activeAsset.name}
+          </span>
+          <span>•</span>
+          <span className="font-mono text-[11px] text-[#B76E79] font-bold">
+            {activeAsset.status}
+          </span>
         </div>
       </div>
 
-      {/* 2. FLOATING PREVIEW COMMIT BAR (Section 11 & 12) */}
-      {isPreviewDirty && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 rounded-2xl shadow-xl border backdrop-blur-md animate-slideDown bg-[#241B1E]/95 border-[#B76E79]/60 text-white">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#FDE3E5]">
-            <Sparkles className="w-3.5 h-3.5 text-[#B76E79] animate-pulse" />
-            <span>Đang xem trước thay đổi</span>
-          </div>
-          <div className="h-4 w-px bg-white/20" />
-          <button
-            onClick={cancelPreview}
-            className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
-          >
-            <X className="w-3 h-3" />
-            <span>Hủy (Cancel)</span>
-          </button>
-          <button
-            onClick={applyPreview}
-            className="flex items-center gap-1.5 px-3.5 py-1 rounded-xl text-xs font-bold bg-gradient-to-r from-[#B76E79] to-[#8C4752] text-white shadow-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer"
-          >
-            <Check className="w-3 h-3" />
-            <span>Áp dụng (Apply)</span>
-          </button>
-        </div>
-      )}
-
-      {/* 3. MAIN CANVAS VIEWPORT */}
+      {/* 2. MAIN CANVAS VIEWPORT */}
       <div
-        className="flex-1 flex items-center justify-center p-6 overflow-hidden relative cursor-crosshair [contain:layout_paint]"
+        className="flex-1 flex items-center justify-center p-6 pb-24 overflow-hidden relative cursor-crosshair [contain:layout_paint]"
         onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
         onTouchMove={(e) => {
           if (e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
         }}
         onMouseDown={onMouseDown}
       >
+        {/* Visual Split Indicator at center top */}
+        {viewMode === 'split' && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-2.5 bg-black/75 text-white text-[10px] font-mono tracking-wider px-4 py-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
+            <span className="opacity-75">BEFORE</span>
+            <span className="text-[#B76E79] font-bold">◀───────●───────▶</span>
+            <span className="opacity-75">AFTER</span>
+          </div>
+        )}
+
         {/* Side-by-side mode */}
         {viewMode === 'side-by-side' ? (
           <div className="flex items-center justify-center gap-6 w-full max-w-4xl h-full">
-            {/* Left: Original RAW */}
+            {/* Left: Original / Previous */}
             <div className="flex-1 flex flex-col items-center">
-              <span className="text-[11px] font-bold font-mono uppercase opacity-70 mb-2">Ảnh Gốc (RAW)</span>
+              <span className="text-[11px] font-bold font-mono uppercase opacity-70 mb-2">
+                {activeAsset.previewImg ? 'ẢNH HIỆN TẠI' : 'ẢNH GỐC (RAW)'}
+              </span>
               <div
                 className={`w-full ${getAspectRatioClass()} rounded-2xl overflow-hidden shadow-lg border-2 border-inherit relative`}
               >
                 <img
-                  src={activeAsset.beforeImg}
+                  src={displayedBeforeImg}
                   alt="Original"
                   className="w-full h-full object-cover select-none"
                 />
               </div>
             </div>
-            {/* Right: AI Result */}
+            {/* Right: AI Result / Preview */}
             <div className="flex-1 flex flex-col items-center">
               <span className="text-[11px] font-bold font-mono uppercase text-[#B76E79] mb-2 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                <span>Kết quả MÂY Studio</span>
+                <span>{activeAsset.previewImg ? 'BẢN XEM TRƯỚC AI' : 'KẾT QUẢ MÂY STUDIO'}</span>
               </span>
               <div
                 className={`w-full ${getAspectRatioClass()} rounded-2xl overflow-hidden shadow-lg border-2 border-[#B76E79]/40 relative`}
               >
                 <img
-                  src={activeAsset.afterImg || activeAsset.beforeImg}
+                  src={displayedAfterImg}
                   alt="AI Enhanced"
                   className="w-full h-full object-cover select-none"
                   style={getFilterStyle()}
@@ -384,10 +329,10 @@ export const StudioCanvas: React.FC = () => {
               willChange: isPanning || isDragging ? 'transform' : 'auto',
             }}
           >
-            {/* Base Layer: AI Enhanced / Committed / Preview Image */}
+            {/* Base Layer: AI Enhanced / Preview Image */}
             <div className="absolute inset-0">
               <img
-                src={activeAsset.afterImg || activeAsset.beforeImg}
+                src={displayedAfterImg}
                 alt={activeAsset.name}
                 className="w-full h-full object-cover select-none"
                 style={getFilterStyle()}
@@ -406,20 +351,20 @@ export const StudioCanvas: React.FC = () => {
                 }}
               >
                 <img
-                  src={activeAsset.beforeImg}
-                  alt="Original RAW"
+                  src={displayedBeforeImg}
+                  alt="Before"
                   className="w-full h-full object-cover select-none filter brightness-95"
                 />
                 <div className="absolute top-4 left-4 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-md font-mono">
-                  ẢNH GỐC
+                  {activeAsset.previewImg ? 'HIỆN TẠI' : 'ẢNH GỐC'}
                 </div>
               </div>
             )}
 
-            {/* AI Side Tag in Split Mode */}
+            {/* Tag in Split Mode */}
             {viewMode === 'split' && (
               <div className="absolute top-4 right-4 bg-[#B76E79]/85 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-md font-bold shadow-md">
-                MÂY ENHANCED
+                {activeAsset.previewImg ? 'XEM TRƯỚC AI' : 'MÂY ENHANCED'}
               </div>
             )}
 
@@ -441,11 +386,130 @@ export const StudioCanvas: React.FC = () => {
               <InspectionLoupe
                 x={loupePos.x}
                 y={loupePos.y}
-                imgUrl={viewMode === 'before' ? activeAsset.beforeImg : activeAsset.afterImg}
+                imgUrl={viewMode === 'before' ? displayedBeforeImg : displayedAfterImg}
               />
             )}
           </div>
         )}
+      </div>
+
+      {/* 3. TACTILE BOTTOM CONTROL DOCK (P0 Hierarchy: Zoom, History, Apply/Cancel) */}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2.5 w-full max-w-lg px-4 pointer-events-none">
+        {/* Floating Commit Bar (if preview dirty) */}
+        {isPreviewDirty && (
+          <div className="pointer-events-auto flex items-center gap-3 px-5 py-2.5 rounded-2xl shadow-2xl border backdrop-blur-xl animate-slideDown bg-[#201518]/95 border-[#B76E79] text-white ring-4 ring-[#B76E79]/20">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#FDE3E5]">
+              <Sparkles className="w-3.5 h-3.5 text-[#B76E79] animate-pulse" />
+              <span>Bản xem trước chưa lưu</span>
+            </div>
+            <div className="h-4 w-px bg-white/20" />
+            <button
+              onClick={cancelPreview}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 hover:bg-white/20 transition-all cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Hủy (Cancel)</span>
+            </button>
+            <button
+              onClick={applyPreview}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#B76E79] to-[#8C4752] text-white shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Áp dụng (Apply)</span>
+            </button>
+          </div>
+        )}
+
+        {/* Central Controls Dock: Zoom & History */}
+        <div className={`pointer-events-auto flex items-center gap-2 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md transition-colors ${
+          isDark ? 'bg-[#181214]/90 border-[#38262A]' : 'bg-white/95 border-[#E6D7D0]'
+        }`}>
+          {/* Zoom: FIT / 100% / 200% */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                setZoomLevel(100);
+                setPan({ x: 0, y: 0 });
+              }}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                zoomLevel === 100 && pan.x === 0 && pan.y === 0
+                  ? 'bg-[#B76E79] text-white shadow-xs'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              title="Vừa khung nhìn (Fit)"
+            >
+              FIT
+            </button>
+            <button
+              onClick={() => {
+                setZoomLevel(100);
+              }}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                zoomLevel === 100 && (pan.x !== 0 || pan.y !== 0)
+                  ? 'bg-[#B76E79] text-white shadow-xs'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              title="Kích thước thực 100%"
+            >
+              100%
+            </button>
+            <button
+              onClick={() => {
+                setZoomLevel(200);
+              }}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                zoomLevel === 200
+                  ? 'bg-[#B76E79] text-white shadow-xs'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              title="Phóng đại 200%"
+            >
+              200%
+            </button>
+            <button
+              onClick={() => setLoupeActive(!isLoupeActive)}
+              className={`flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                isLoupeActive
+                  ? 'bg-[#B76E79] text-white border-[#8C4752]'
+                  : 'opacity-75 hover:opacity-100 border-inherit'
+              }`}
+              title="Bật/Tắt kính lúp 200%"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Kính lúp</span>
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-inherit opacity-40" />
+
+          {/* History: Undo / Reset / Redo */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={undo}
+              disabled={historyPast.length === 0}
+              className="p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 transition-all cursor-pointer"
+              title="Hoàn tác (Undo)"
+            >
+              <Undo2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={resetToOriginal}
+              className="px-2 py-1 rounded-xl text-xs font-medium opacity-70 hover:opacity-100 hover:text-red-500 transition-all cursor-pointer"
+              title="Khôi phục ảnh gốc ban đầu (Reset)"
+            >
+              <RotateCcw className="w-3.5 h-3.5 inline mr-1" />
+              <span>Reset</span>
+            </button>
+            <button
+              onClick={redo}
+              disabled={historyFuture.length === 0}
+              className="p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 transition-all cursor-pointer"
+              title="Làm lại (Redo)"
+            >
+              <Redo2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
