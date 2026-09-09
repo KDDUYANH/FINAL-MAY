@@ -33,7 +33,25 @@ export const ContextualInspector: React.FC = () => {
   const recipe = activeAsset?.recipe;
   const brand = activeAsset?.brand;
 
-  if (!activeAsset || !recipe) return null;
+  if (!activeAsset || !recipe) {
+    return (
+      <aside
+        className={`w-80 border-l flex flex-col items-center justify-center p-6 text-center select-none shrink-0 transition-colors duration-200 ${
+          isDark ? 'bg-[#181214]/95 border-[#302225] text-neutral-400' : 'bg-white/95 border-[#EFE4DE] text-neutral-500'
+        }`}
+      >
+        <div className="w-12 h-12 rounded-2xl bg-[#B76E79]/10 text-[#B76E79] flex items-center justify-center mb-3">
+          <SlidersHorizontal className="w-5 h-5" />
+        </div>
+        <h4 className="font-serif font-bold text-sm text-neutral-900 dark:text-[#FAF5F2] mb-1">
+          Bảng Điều Khiển
+        </h4>
+        <p className="text-xs opacity-70 leading-relaxed font-sans max-w-[200px]">
+          Chưa chọn ảnh sản phẩm. Hãy tải ảnh để bắt đầu tinh chỉnh chi tiết.
+        </p>
+      </aside>
+    );
+  }
 
   // 1. TOOL: ENHANCE
   const renderEnhance = () => (

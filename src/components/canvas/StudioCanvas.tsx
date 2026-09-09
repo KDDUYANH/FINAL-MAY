@@ -8,12 +8,14 @@ import {
   X, 
   SplitSquareVertical,
   Undo2,
-  Redo2
+  Redo2,
+  Upload
 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 import { InspectionLoupe } from './InspectionLoupe';
 import { BrandLogo } from '../brand/BrandLogo';
+import { createManagedObjectURL } from '../../utils/imageOptimizer';
 
 export const StudioCanvas: React.FC = () => {
   const {
@@ -38,11 +40,14 @@ export const StudioCanvas: React.FC = () => {
     historyPast,
     historyFuture,
     themeMode,
+    loadSampleAsset,
+    addUploadedAssets,
   } = useStudioStore();
 
   const isDark = themeMode === 'quiet-luxury';
   const activeAsset = assets.find((a) => a.id === selectedAssetId) || assets[0];
   const containerRef = useRef<HTMLDivElement>(null);
+  const emptyFileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   // Pan state for 100% / 200% zoom
@@ -130,7 +135,70 @@ export const StudioCanvas: React.FC = () => {
     };
   }, []);
 
-  if (!activeAsset) return null;
+  if (!activeAsset) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 select-none relative h-full">
+        <input
+          type="file"
+          ref={emptyFileInputRef}
+          onChange={(e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            const newAssets = Array.from(files).map((file) => {
+              const url = createManagedObjectURL(file);
+              return {
+                name: file.name.replace(/\.[^/.]+$/, ''),
+                category: 'Mỹ phẩm',
+                beforeImg: url,
+                afterImg: url,
+                width: 1200,
+                height: 1500,
+              };
+            });
+            addUploadedAssets(newAssets);
+          }}
+          multiple
+          accept="image/*"
+          className="hidden"
+        />
+        <div
+          className={`max-w-md w-full p-8 md:p-10 rounded-3xl border-2 border-dashed text-center flex flex-col items-center gap-4 transition-all shadow-sm ${
+            isDark
+              ? 'border-[#442F34] bg-[#1E1518]/90 text-[#FAF5F2]'
+              : 'border-[#EAD3CC] bg-gradient-to-b from-[#FFF9F7] to-[#FAF2EE] text-[#2C1C1F]'
+          }`}
+        >
+          <div className="w-16 h-16 rounded-2xl bg-[#B76E79]/15 text-[#B76E79] flex items-center justify-center shadow-xs">
+            <Upload className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-base font-serif font-bold text-neutral-900 dark:text-[#FAF5F2]">
+              Không Gian Studio Đang Trống
+            </h3>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed font-sans">
+              Tải lên ảnh chụp thực tế sản phẩm (PNG, JPG, WebP) để kích hoạt toàn bộ công cụ ánh sáng và bối cảnh MÂY.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={() => emptyFileInputRef.current?.click()}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#B76E79] via-[#A85E69] to-[#8C4752] text-white text-xs font-bold shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Tải ảnh ngay</span>
+            </button>
+            <button
+              onClick={() => loadSampleAsset()}
+              className="px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
+              <span>Thử ảnh mẫu MÂY</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Real Brand Logo Watermark Layer
   const renderWatermarkLayer = () => {

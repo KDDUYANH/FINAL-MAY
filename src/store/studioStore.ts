@@ -33,60 +33,51 @@ const DEFAULT_BRAND_RECIPE: BrandRecipe = {
   logoAsset: 'brand_mark_transparent',
 };
 
-// ─── Demo Assets ────────────────────────────────────────────────
+// ─── Optional Sample Asset for Testing (Loaded on-demand only) ──
 
-const DEMO_ASSETS: Asset[] = [
-  {
-    id: 'asset-01', name: 'Serum Astralisca 25%', category: 'Serum',
-    beforeImg: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1200&q=85',
-    afterImg: 'https://images.unsplash.com/photo-1608248597359-2ff96fec0872?auto=format&fit=crop&w=1200&q=85',
-    width: 1200, height: 1500, isMaster: true, isSelected: true,
-    status: 'Master', integrityScore: 100,
-    protectedRegions: ['Label: 25% Mandelic Acid Glow', 'Logo: MÂY Metallic Vector Lockup', 'Cap: Rose Gold Metallic Pipette', 'Bottle: Amber Frosted Glass'],
-    analysis: {
-      productDetected: true, confidence: 0.99,
-      boundingBox: { x: 0.25, y: 0.12, width: 0.50, height: 0.76 },
-      orientation: 'portrait', imageQualityScore: 94, backgroundClutterScore: 18,
-      lightingQuality: 'balanced', shadowsQuality: 'soft', labelRisk: 'safe',
-      productEdgesIntact: true, transparencyIssues: false,
-      recommendedCrop: '4:5', recommendedEnhancement: 'auto', recommendedComposition: 'center',
-      summaryRecommendation: 'Chai serum độ tương phản cao, nhãn in sắc nét.',
-    },
-    recommendation: {
-      action: 'Nâng sáng studio + Nền lụa satin',
-      reason: 'Sản phẩm sắc nét, nhưng nền hơi rối và ánh sáng hơi phẳng.',
-      presetSuggestion: 'clean_luxury', backgroundSuggestion: 'silk',
-      lightingSuggestion: 'soft_studio', isAlreadyGood: false,
-    },
-    recipe: { ...DEFAULT_EDIT_RECIPE }, brand: { ...DEFAULT_BRAND_RECIPE },
-    overrideActive: false, exceptions: [],
+const SAMPLE_ASSET: Asset = {
+  id: 'sample-serum-01',
+  name: 'Serum Astralisca 25%',
+  category: 'Serum',
+  beforeImg: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1200&q=85',
+  afterImg: 'https://images.unsplash.com/photo-1608248597359-2ff96fec0872?auto=format&fit=crop&w=1200&q=85',
+  width: 1200,
+  height: 1500,
+  isMaster: true,
+  isSelected: true,
+  status: 'Master',
+  integrityScore: 100,
+  protectedRegions: ['Label: 25% Mandelic Acid Glow', 'Logo: MÂY Metallic Vector Lockup', 'Cap: Rose Gold Metallic Pipette', 'Bottle: Amber Frosted Glass'],
+  analysis: {
+    productDetected: true,
+    confidence: 0.99,
+    boundingBox: { x: 0.25, y: 0.12, width: 0.50, height: 0.76 },
+    orientation: 'portrait',
+    imageQualityScore: 94,
+    backgroundClutterScore: 18,
+    lightingQuality: 'balanced',
+    shadowsQuality: 'soft',
+    labelRisk: 'safe',
+    productEdgesIntact: true,
+    transparencyIssues: false,
+    recommendedCrop: '4:5',
+    recommendedEnhancement: 'auto',
+    recommendedComposition: 'center',
+    summaryRecommendation: 'Chai serum độ tương phản cao, nhãn in sắc nét.',
   },
-  {
-    id: 'asset-02', name: 'Crème De Jour Lumière', category: 'Cream',
-    beforeImg: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=85',
-    afterImg: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=85',
-    width: 1200, height: 1200, isMaster: false, isSelected: true,
-    status: 'Ready', integrityScore: 100,
-    protectedRegions: ['Label: Crème De Jour', 'Jar: Frosted Pink Glass', 'Lid: Champagne Gold'],
-    recommendation: {
-      action: 'Nâng chi tiết bề mặt',
-      reason: 'Ảnh đã tốt. Có thể tăng chi tiết bề mặt thủy tinh và bóng nắp.',
-      presetSuggestion: 'soft_beauty', isAlreadyGood: false,
-    },
-    recipe: { ...DEFAULT_EDIT_RECIPE, aspectRatio: '1:1' }, brand: { ...DEFAULT_BRAND_RECIPE },
-    overrideActive: false, exceptions: [],
+  recommendation: {
+    action: 'Nâng sáng studio + Nền lụa satin',
+    reason: 'Sản phẩm sắc nét, nhưng nền hơi rối và ánh sáng hơi phẳng.',
+    presetSuggestion: 'clean_luxury',
+    backgroundSuggestion: 'silk',
+    lightingSuggestion: 'soft_studio',
+    isAlreadyGood: false,
   },
-  {
-    id: 'asset-03', name: 'Velvet Matte Lipstick Rose', category: 'Lipstick',
-    beforeImg: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=1200&q=85',
-    afterImg: 'https://images.unsplash.com/photo-1631214524020-7e18db9a8f92?auto=format&fit=crop&w=1200&q=85',
-    width: 1000, height: 1500, isMaster: false, isSelected: true,
-    status: 'Ready', integrityScore: 100,
-    protectedRegions: ['Body: Rose Gold Shell', 'Bullet: Velvet Rose Contour'],
-    recipe: { ...DEFAULT_EDIT_RECIPE, scenePreset: 'marble' }, brand: { ...DEFAULT_BRAND_RECIPE },
-    overrideActive: false, exceptions: [],
-  },
-];
+  recipe: { ...DEFAULT_EDIT_RECIPE },
+  brand: { ...DEFAULT_BRAND_RECIPE },
+  overrideActive: false,
+  exceptions: [],
+};
 
 // ─── Store Interface ────────────────────────────────────────────
 
@@ -153,6 +144,7 @@ interface StudioState {
   previewRecommendation: (assetId?: string) => Promise<void>;
   applyRecommendation: (assetId?: string) => Promise<void>;
   applyMasterToBatch: () => Promise<void>;
+  loadSampleAsset: () => void;
   openExport: () => void;
   closeExport: () => void;
   undo: () => void;
@@ -164,8 +156,8 @@ interface StudioState {
 export const useStudioStore = create<StudioState>((set, get) => ({
   currentView: 'home',
   activeEditTool: 'enhance',
-  assets: DEMO_ASSETS,
-  selectedAssetId: 'asset-01',
+  assets: [],
+  selectedAssetId: '',
   themeMode: 'soft-luxury',
   viewMode: 'split',
   sliderPosition: 50,
@@ -188,6 +180,21 @@ export const useStudioStore = create<StudioState>((set, get) => ({
 
   // ─── Assets ─────────────────────────────────────────────────
   selectAsset: (id) => set({ selectedAssetId: id }),
+
+  loadSampleAsset: () => {
+    const current = get().assets;
+    const existing = current.find((a) => a.id === SAMPLE_ASSET.id);
+    if (!existing) {
+      set({
+        assets: [SAMPLE_ASSET, ...current],
+        selectedAssetId: SAMPLE_ASSET.id,
+        currentView: 'studio',
+      });
+    } else {
+      set({ selectedAssetId: SAMPLE_ASSET.id, currentView: 'studio' });
+    }
+    get().showToast('✨ Đã nạp ảnh mẫu Serum Astralisca (MÂY Atelier)');
+  },
 
   deleteAsset: (id) => {
     const target = get().assets.find((a) => a.id === id);

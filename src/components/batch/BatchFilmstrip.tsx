@@ -84,6 +84,36 @@ export const BatchFilmstrip: React.FC = () => {
     }
   };
 
+  if (assets.length === 0) {
+    return (
+      <div
+        className={`h-16 border-t px-6 flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
+          isDark ? 'bg-[#181214]/95 border-[#302225]' : 'bg-white/95 border-[#EFE4DE]'
+        }`}
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          multiple
+          accept="image/*"
+          className="hidden"
+        />
+        <div className="flex items-center gap-2.5 text-xs opacity-60">
+          <span className="w-2 h-2 rounded-full bg-[#B76E79]/60 animate-pulse" />
+          <span>Danh sách làm việc trống. Tải thêm ảnh để kích hoạt chế độ xử lý hàng loạt.</span>
+        </div>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#B76E79]/10 text-[#B76E79] hover:bg-[#B76E79] hover:text-white text-xs font-bold transition-all cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Thêm ảnh mới</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`h-28 border-t px-6 py-2.5 flex items-center justify-between shrink-0 z-20 transition-colors duration-200 ${
