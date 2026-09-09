@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Dev: Vite Studio (Port 5173)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Build: Production Bundle",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run build",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Preview: Production Server",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run preview",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

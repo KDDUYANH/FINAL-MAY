@@ -201,7 +201,10 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     if (target) {
       revokeAssetObjectURLs(target);
     }
-    const remaining = get().assets.filter((a) => a.id !== id);
+    let remaining = get().assets.filter((a) => a.id !== id);
+    if (target?.isMaster && remaining.length > 0 && !remaining.some((a) => a.isMaster)) {
+      remaining = remaining.map((a, i) => (i === 0 ? { ...a, isMaster: true, status: (a.status === 'Raw' ? 'Master' : a.status) as any } : a));
+    }
     set((s) => ({
       assets: remaining,
       selectedAssetId: s.selectedAssetId === id ? (remaining[0]?.id || '') : s.selectedAssetId,
@@ -210,14 +213,17 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   },
 
   addUploadedAssets: (newAssets) => {
+    const isFirstSessionUpload = get().assets.length === 0;
     const created: Asset[] = newAssets.map((item, idx) => ({
       id: `upload-${Date.now()}-${idx}`,
       name: item.name || `Sản phẩm ${get().assets.length + idx + 1}`,
       category: item.category || 'Mỹ phẩm',
       beforeImg: item.beforeImg || '',
       afterImg: item.afterImg || item.beforeImg || '',
-      width: item.width || 1200, height: item.height || 1500,
-      isMaster: false, isSelected: true, status: 'Raw' as const,
+      width: item.width || 1200, height: 1500,
+      isMaster: isFirstSessionUpload && idx === 0,
+      isSelected: true,
+      status: (isFirstSessionUpload && idx === 0 ? 'Master' : 'Raw') as const,
       integrityScore: 100, protectedRegions: [],
       recipe: { ...DEFAULT_EDIT_RECIPE }, brand: { ...DEFAULT_BRAND_RECIPE },
       overrideActive: false, exceptions: [],

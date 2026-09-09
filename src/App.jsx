@@ -55,7 +55,7 @@ export default function App() {
 
       {/* 5. FLOATING TOAST FEEDBACK */}
       {toastMessage && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#2D1D1F]/95 text-[#FAF5F2] px-5 py-2.5 rounded-2xl shadow-2xl border border-[#B76E79]/40 flex items-center gap-2.5 backdrop-blur-md animate-fadeIn">
+        <div className="fixed bottom-24 left-1/2 z-50 bg-[#2D1D1F]/95 text-[#FAF5F2] px-5 py-2.5 rounded-2xl shadow-2xl border border-[#B76E79]/40 flex items-center gap-2.5 backdrop-blur-md animate-toast">
           <Sparkles className="w-3.5 h-3.5 text-[#FDE3E5]" />
           <span className="text-xs font-semibold">{toastMessage}</span>
         </div>

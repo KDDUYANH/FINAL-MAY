@@ -198,7 +198,7 @@ export const BatchFilmstrip: React.FC = () => {
               )}
 
               {/* Quick Delete Hover Button */}
-              {assets.length > 1 && !item.isMaster && (
+              {(!item.isMaster || assets.length === 1) && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
