@@ -403,12 +403,14 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     const provider = AIProviderService.getInstance().getProvider();
 
     try {
+      const previousSnapshot = get().assets;
       const result = await provider.makeProfessional(target, target.recipe, (u) => {
         set({ jobState: u.state, jobProgress: u.progress, jobMessage: u.message });
       });
       const proRecipe = RecipeEngine.createProfessionalRecipe(target.analysis);
 
       set((s) => ({
+        historyPast: s.historyPast.length > 0 ? s.historyPast : [previousSnapshot],
         jobState: 'completed',
         jobProgress: 100,
         jobMessage: 'Bản xem trước hoàn tất!',
